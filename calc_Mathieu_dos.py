@@ -34,11 +34,12 @@ class calculate_Mathieu_dos:
             self.me=1.0
         self.m*=self.me
         self.b=1.6022e-19 #J/eV
+        self.main()
         
     def main(self):
-        if type(self.k)=='list':
+        if type(self.k)==list:
             for i in self.k:
-                self.calculate_dos[k]
+                self.calculate_dos(i)
         else:
             self.calculate_dos[self.k]
         self.plot_dos()
@@ -49,15 +50,15 @@ class calculate_Mathieu_dos:
                 q=self.A[j]*self.b*self.m/pi**2/k**2/self.h**2
                 if n%2==0:
                     a=mathieu_a(n,q)
-                    a*=pi**2*k**2*h**2/m/b/2
-                    a-=-xrange
+                    a*=pi**2*k**2*self.h**2/self.m/self.b/2
+                    a-=-self.xrange
                     a=round(a/(2*self.xrange/self.xpoints))
-                    if a>0 and a<xpoints:
+                    if a>0 and a<self.xpoints:
                         self.eigenval[a][j]+=1.0
         for j in range(self.ypoints):
             smeared_dos=zeros(self.xpoints)
             for i in range(self.xpoints):
-                gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-j)*2*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])
+                gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*2*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
     
