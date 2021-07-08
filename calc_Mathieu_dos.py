@@ -35,15 +35,6 @@ class calculate_Mathieu_dos:
             self.me=1.0
         self.m*=self.me
         self.b=1.6022e-19 #J/eV
-        self.main()
-        
-    def main(self):
-        if type(self.k)==list:
-            for i in self.k:
-                self.calculate_dos(i)
-        else:
-            self.calculate_dos[self.k]
-        self.plot_dos()
         
     def read_json_eigenenergies(self,filepath):
         with open(filepath) as file:
