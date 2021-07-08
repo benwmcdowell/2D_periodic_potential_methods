@@ -6,8 +6,14 @@ from json import load
 
 class calculate_Mathieu_dos:
     def __init__(self,nstates,k,xpoints,ypoints,xrange,yrange,**args):
-        self.energies=linspace(-xrange,xrange,xpoints) #eV
-        self.A=linspace(-yrange,yrange,ypoints) #eV
+        if type(xrange)==list:
+            self.energies=linspace(-min(xrange),max(xrange),xpoints)
+        else:
+            self.energies=linspace(-xrange,xrange,xpoints) #eV
+        if type(yrange)==list:
+            self.A=linspace(-min(yrange),max(yrange),ypoints)
+        else:
+            self.A=linspace(-yrange,yrange,ypoints) #eV
         self.eigenval=zeros((xpoints,ypoints))
         self.dos=zeros((xpoints,ypoints))
         self.x=zeros((xpoints,ypoints))
@@ -36,7 +42,7 @@ class calculate_Mathieu_dos:
         self.m*=self.me
         self.b=1.6022e-19 #J/eV
         
-    def read_json_eigenenergies(self,filepath,**args:
+    def read_json_eigenenergies(self,filepath,**args):
         if 'normalize_dos' in args:
             normalize=True
         else:
@@ -81,7 +87,7 @@ class calculate_Mathieu_dos:
     
     def plot_dos(self):
         plt.figure()
-        plt.title('Mathieu equation density of states')
+        plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
         plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
         plt.xlabel('energy / eV')
         plt.ylabel('barrier height / eV')
