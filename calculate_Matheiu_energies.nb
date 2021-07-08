@@ -1,0 +1,115 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.2' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      4435,        107]
+NotebookOptionsPosition[      3884,         91]
+NotebookOutlinePosition[      4299,        107]
+CellTagsIndexPosition[      4256,        104]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"CalculateMathieuEnergies", "[", 
+   RowBox[{"n_", ",", "k_", ",", "q_"}], "]"}], " ", ":=", 
+  "\[IndentingNewLine]", "\t", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", "data", "}"}], ",", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"data", "=", 
+      RowBox[{"Table", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"MathieuCharacteristicA", "[", 
+          RowBox[{"i", ",", "j"}], "]"}], "//", "N"}], ",", 
+        RowBox[{"{", 
+         RowBox[{"i", ",", 
+          RowBox[{
+           RowBox[{"-", "1"}], "*", "k"}], ",", "k", ",", 
+          RowBox[{"2", "*", 
+           RowBox[{"k", "/", 
+            RowBox[{"(", 
+             RowBox[{"n", "-", "1"}], ")"}]}]}]}], "}"}], ",", 
+        RowBox[{"{", 
+         RowBox[{"j", ",", 
+          RowBox[{
+           RowBox[{"-", "1"}], "*", "q"}], ",", "q", ",", 
+          RowBox[{"2", "*", 
+           RowBox[{"q", "/", 
+            RowBox[{"(", 
+             RowBox[{"n", "-", "1"}], ")"}]}]}]}], "}"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"Export", "[", 
+      RowBox[{
+      "\"\<Mathieu_values.json\>\"", ",", "data", ",", 
+       "\"\<ExpressionJSON\>\""}], "]"}], ";"}]}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.8346684025040345`*^9, 3.8346684215213137`*^9}, {
+   3.83466888494963*^9, 3.8346688961856947`*^9}, {3.834668930276351*^9, 
+   3.834669010745623*^9}, {3.8346690429557185`*^9, 3.834669044862765*^9}, {
+   3.8346695003254595`*^9, 3.8346695407460413`*^9}, {3.834669745671775*^9, 
+   3.834669756959216*^9}, {3.834682209290233*^9, 3.8346822341664653`*^9}, {
+   3.83468237245725*^9, 3.834682375425932*^9}, {3.8346824583908*^9, 
+   3.8346825771403484`*^9}, {3.8346826343008738`*^9, 
+   3.8346827394545155`*^9}, {3.834690614030808*^9, 3.8346906414043207`*^9}, {
+   3.8346906926842685`*^9, 3.834690699627511*^9}, {3.8346908083790245`*^9, 
+   3.8346908195821886`*^9}, {3.8346915319101896`*^9, 
+   3.8346915378477654`*^9}, {3.834691954569174*^9, 3.8346919741758904`*^9}, {
+   3.83469253464502*^9, 3.834692587941057*^9}, {3.8346929299883904`*^9, 
+   3.834692936676115*^9}, {3.8346931265556927`*^9, 3.8346931400509233`*^9}, {
+   3.8346935089574986`*^9, 3.834693522582123*^9}, {3.8346948330196457`*^9, 
+   3.8346948337387333`*^9}, {3.8346950132854147`*^9, 3.834695025441521*^9}, {
+   3.8346951322540083`*^9, 3.8346951661760516`*^9}, 3.834695234988395*^9, {
+   3.8347099416606207`*^9, 3.834710010738396*^9}, {3.8347103336602697`*^9, 
+   3.834710417207488*^9}, {3.834710506575139*^9, 3.8347105211252317`*^9}, {
+   3.8347106333716664`*^9, 3.83471063856065*^9}, {3.834711827313997*^9, 
+   3.8347118338039923`*^9}, {3.8347126861840086`*^9, 3.8347127883437862`*^9}},
+ CellLabel->"In[81]:=",ExpressionUUID->"1102502a-839b-42fd-a355-6cb491b43766"],
+
+Cell[BoxData[
+ RowBox[{"CalculateMathieuEnergies", "[", 
+  RowBox[{"3", ",", "1", ",", "1"}], "]"}]], "Input",
+ CellChangeTimes->{{3.8346906530113535`*^9, 3.8346906684429417`*^9}, {
+   3.8346907100707164`*^9, 3.834690725415451*^9}, 3.834695048941497*^9, {
+   3.834710529229251*^9, 3.834710550744603*^9}},
+ CellLabel->"In[82]:=",ExpressionUUID->"892eaf30-c0e7-4a24-bf43-d7cfd8af24a9"],
+
+Cell[BoxData[""], "Input",
+ CellChangeTimes->{{3.834710268160282*^9, 
+  3.8347102719728265`*^9}},ExpressionUUID->"c28177b8-5dc9-4d38-975e-\
+076e35695316"]
+},
+WindowSize->{1020., 543.75},
+WindowMargins->{{-1026, Automatic}, {Automatic, -272.25}},
+FrontEndVersion->"12.2 for Microsoft Windows (64-bit) (December 12, 2020)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"808962fd-2f94-4d81-a0a5-927403e1f307"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[558, 20, 2779, 56, 85, "Input",ExpressionUUID->"1102502a-839b-42fd-a355-6cb491b43766"],
+Cell[3340, 78, 383, 6, 28, "Input",ExpressionUUID->"892eaf30-c0e7-4a24-bf43-d7cfd8af24a9"],
+Cell[3726, 86, 154, 3, 28, "Input",ExpressionUUID->"c28177b8-5dc9-4d38-975e-076e35695316"]
+}
+]
+*)
+
