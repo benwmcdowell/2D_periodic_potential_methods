@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from json import load
 
 class calculate_Mathieu_dos:
-    def __init__(self,nstates,k,xpoints,ypoints,xrange,yrange,**args):
+    def __init__(self,k,xpoints,ypoints,xrange,yrange,**args):
         if type(xrange)==list:
             self.energies=linspace(-min(xrange),max(xrange),xpoints)
             self.xrange=max(xrange)-min(xrange)
@@ -22,7 +22,6 @@ class calculate_Mathieu_dos:
         self.dos=zeros((xpoints,ypoints))
         self.x=zeros((xpoints,ypoints))
         self.y=zeros((xpoints,ypoints))
-        self.nstates=nstates
         self.k=k
         self.xpoints=xpoints
         self.ypoints=ypoints
@@ -69,7 +68,8 @@ class calculate_Mathieu_dos:
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
         
-    def calculate_dos(self,k):
+    def calculate_dos(self,k,nstates):
+        self.nstates=nstates
         for n in range(1,self.nstates):
             for j in range(self.ypoints):
                 q=self.A[j]*self.b*self.m/pi**2/k**2/self.h**2
