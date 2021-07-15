@@ -65,23 +65,19 @@ class calculate_Mathieu_dos:
         for j in range(self.ypoints):
             for a in data[j]:
                 a*=pi**2*self.k**2*self.h**2/self.m/self.b/2
-                a-=-self.energies[0]
+                a-=-self.x[0][0]
                 a=round(a/(self.xrange/self.xpoints))
                 if a>0 and a<self.xpoints:
-                    self.eigenval[a][j]+=1.0
-        for j in range(self.ypoints):
+                    self.eigenval[j][a]+=1.0
+        for j in range(self.xpoints):
             smeared_dos=zeros(self.xpoints)
-            for i in range(self.xpoints):
+            for i in range(self.ypoints):
                 if normalize:
                     gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
                 if not normalize:
                     gauss=array([self.eigenval[i][j]*exp((((i-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
-        self.x.T
-        self.y.T
-        self.eigenval.T
-        self.dos.T
         self.data_type='energy'
         
     def read_json_eigenfunctions(self,filepath,**args):
