@@ -7,7 +7,7 @@ from json import load
 from sys import exit
 
 class calculate_Mathieu_dos:
-    def __init__(self,data_type,k,xpoints,ypoints,xrange,yrange,**args):
+    def __init__(self,data_type,xpoints,ypoints,xrange,yrange,**args):
         self.data_type=data_type
         self.eigenval=zeros((xpoints,ypoints))
         self.dos=zeros((xpoints,ypoints))
@@ -21,16 +21,16 @@ class calculate_Mathieu_dos:
             self.sigma=float(args['sigma'])
         else:
             self.sigma=0.001 #ev, gaussian smearing parameter
-        self.k=k
         self.h=6.626e-34 #J s
         self.h/=2*pi
         self.m=9.10938356e-31 #kg
         if 'me' in args:
             self.me=args['me']
         else:
-            self.me=1.0
+            self.me=0.4
         self.m*=self.me
         self.b=1.6022e-19 #J/eV
+        self.k=0.0
         
         if self.data_type!='energy' and self.data_type!='function':
             print('unknown data type. use either function, for plotting real space projections of Mathieu DOS, or energy, for plotting Mathieu DOS as a function of potential barrier height')
@@ -40,13 +40,13 @@ class calculate_Mathieu_dos:
             tempy=linspace(min(yrange),max(yrange),ypoints)
             self.yrange=max(yrange)-min(yrange)
         else:
-            tempy=linspace(-yrange,yrange,ypoints) #eV
+            tempy=linspace(-yrange,yrange,ypoints)
             self.yrange=yrange
         if type(xrange)==list:
             tempx=linspace(min(xrange),max(xrange),xpoints)
             self.xrange=max(xrange)-min(xrange)
         else:
-            tempx=linspace(-xrange,xrange,xpoints) #eV
+            tempx=linspace(-xrange,xrange,xpoints)
             self.xrange=xrange
             
             for i in range(self.ypoints):
@@ -54,7 +54,8 @@ class calculate_Mathieu_dos:
                     self.x[i][j]=tempx[j]
                     self.y[i][j]=tempy[i] 
         
-    def read_json_eigenenergies(self,filepath,**args):
+    def read_json_eigenenergies(self,k,filepath,**args):
+        self.k=k
         if 'normalize_dos' in args:
             normalize=True
         else:
@@ -62,20 +63,20 @@ class calculate_Mathieu_dos:
         with open(filepath) as file:
             data=load(file)
             data=array([[float(i[j]) for j in range(1,len(i))] for i in data[1:]])
-        for j in range(self.ypoints):
-            for a in data[j]:
+        for i in range(self.xpoints):
+            for a in data[:,i]:
                 a*=pi**2*self.k**2*self.h**2/self.m/self.b/2
-                a-=-self.x[0][0]
-                a=round(a/(self.xrange/self.xpoints))
-                if a>0 and a<self.xpoints:
-                    self.eigenval[j][a]+=1.0
+                a-=-self.y[0][0]
+                a=round(a/(self.yrange/self.ypoints))
+                if a>0 and a<self.ypoints:
+                    self.eigenval[a][i]+=1.0
         for j in range(self.xpoints):
-            smeared_dos=zeros(self.xpoints)
+            smeared_dos=zeros(self.ypoints)
             for i in range(self.ypoints):
                 if normalize:
-                    gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
+                    gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)])  #normalized gaussian
                 if not normalize:
-                    gauss=array([self.eigenval[i][j]*exp((((i-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
+                    gauss=array([self.eigenval[i][j]*exp((((i-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
         self.data_type='energy'
@@ -93,11 +94,9 @@ class calculate_Mathieu_dos:
                     self.psi[i-1][j-1]=0.0
                 else:
                     self.psi[i-1][j-1]=float(data[i][j])**2
-        self.band_gap_counter=0
         for i in range(self.ypoints):
             if max(self.psi[i])>0.0:
                 self.psi[i]/=norm(self.psi[i])
-                self.band_gap_counter+=1
         for i in range(self.xpoints):
             smeared_dos=zeros(self.ypoints)
             for j in range(self.ypoints):
@@ -108,6 +107,12 @@ class calculate_Mathieu_dos:
                 smeared_dos+=gauss
             self.psi_smeared[:,i]+=smeared_dos
         self.data_type='function'
+        
+    def sum_2D(self,filepaths,**args):
+        if self.data_type=='energy':
+            if 'k' not in args:
+                print('supply the spatial frequencies (in units of per m) as a list: ie k=[k1,k2]')
+                exit()
         
     def calculate_dos(self,k,nstates):
         self.nstates=nstates
