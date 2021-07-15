@@ -113,6 +113,18 @@ class calculate_Mathieu_dos:
             if 'k' not in args:
                 print('supply the spatial frequencies (in units of per m) as a list: ie k=[k1,k2]')
                 exit()
+            k=args['k']
+            for i in range(len(filepaths)):
+                tempvar=calculate_Mathieu_dos(self.data_type,self.xpoints,self.ypoints,[self.x[0][0],self.x[0][-1]],[self.y[0][0],self.y[-1][0]],me=self.me,sigma=self.sigma)
+                tempvar.read_json_eigenenergies(k[i],filepaths[i])
+                self.eigenval+=tempvar.eigenval
+                self.dos+=tempvar.dos
+        if self.data_type=='function':
+            for i in range(len(filepaths)):
+                tempvar=calculate_Mathieu_dos(self.data_type,self.xpoints,self.ypoints,[self.x[0][0],self.x[0][-1]],[self.y[0][0],self.y[-1][0]],me=self.me,sigma=self.sigma)
+                tempvar.read_json_eigenfunctions(filepaths[i])
+                self.psi+=tempvar.psi
+                self.psi_smeared+=tempvar.psi_smeared
         
     def calculate_dos(self,k,nstates):
         self.nstates=nstates
