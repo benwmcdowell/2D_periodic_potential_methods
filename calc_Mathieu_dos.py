@@ -68,6 +68,7 @@ class calculate_Mathieu_dos:
             data=load(file)
             data=array([[float(i[j]) for j in range(1,len(i))] for i in data[1:]])
             data*=pi**2*self.k**2*self.h**2/self.m/self.b/2
+            data+=abs(self.x)
         if self.auto_axes:
             tol=max(data.flatten())-min(data.flatten())
             tol*=0.02
