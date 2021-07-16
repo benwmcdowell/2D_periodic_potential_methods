@@ -21,6 +21,10 @@ class calculate_Mathieu_dos:
             self.sigma=float(args['sigma'])
         else:
             self.sigma=0.001 #ev, gaussian smearing parameter
+        if 'auto_axes' in args:
+            self.auto_axes=True
+        else:
+            self.auto_axes=False
         self.h=6.626e-34 #J s
         self.h/=2*pi
         self.m=9.10938356e-31 #kg
@@ -49,10 +53,10 @@ class calculate_Mathieu_dos:
             tempx=linspace(-xrange,xrange,xpoints)
             self.xrange=xrange
             
-            for i in range(self.ypoints):
-                for j in range(self.xpoints):
-                    self.x[i][j]=tempx[j]
-                    self.y[i][j]=tempy[i] 
+        for i in range(self.ypoints):
+            for j in range(self.xpoints):
+                self.x[i][j]=tempx[j]
+                self.y[i][j]=tempy[i] 
         
     def read_json_eigenenergies(self,k,filepath,**args):
         self.k=k
@@ -63,9 +67,17 @@ class calculate_Mathieu_dos:
         with open(filepath) as file:
             data=load(file)
             data=array([[float(i[j]) for j in range(1,len(i))] for i in data[1:]])
+            data*=pi**2*self.k**2*self.h**2/self.m/self.b/2
+        if self.auto_axes:
+            tol=max(data.flatten())-min(data.flatten())
+            tol*=0.02
+            self.yrange=[min(data.flatten())-tol,max(data.flatten())+tol]
+            tempy=linspace(min(self.yrange),max(self.yrange),self.ypoints)
+            for i in range(self.ypoints):
+                for j in range(self.xpoints):
+                    self.y[i][j]=tempy[i]
         for i in range(self.xpoints):
             for a in data[:,i]:
-                a*=pi**2*self.k**2*self.h**2/self.m/self.b/2
                 a-=-self.y[0][0]
                 a=round(a/(self.yrange/self.ypoints))
                 if a>0 and a<self.ypoints:
