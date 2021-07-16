@@ -79,7 +79,7 @@ class calculate_Mathieu_dos:
             self.yrange=self.yrange[1]-self.yrange[0]
         for i in range(self.xpoints):
             for a in data[:,i]:
-                a-=-self.y[0][0]
+                a-=self.y[0][0]
                 a=round(a/(self.yrange/self.ypoints))
                 if a>0 and a<self.ypoints:
                     self.eigenval[a][i]+=1.0
