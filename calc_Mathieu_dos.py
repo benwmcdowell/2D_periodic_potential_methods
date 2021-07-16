@@ -76,6 +76,7 @@ class calculate_Mathieu_dos:
             for i in range(self.ypoints):
                 for j in range(self.xpoints):
                     self.y[i][j]=tempy[i]
+            self.yrange=self.yrange[1]-self.yrange[0]
         for i in range(self.xpoints):
             for a in data[:,i]:
                 a-=-self.y[0][0]
