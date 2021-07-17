@@ -1,5 +1,5 @@
 from math import pi
-from numpy import linspace,zeros,array,sqrt,exp
+from numpy import linspace,zeros,array,sqrt,exp,floor
 from numpy.linalg import norm
 from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
@@ -100,6 +100,14 @@ class calculate_Mathieu_dos:
             normalize=True
         else:
             normalize=False
+        if 'reduced_zone' in args:
+            reduced=True
+            periods=args['reduced_zone']
+            if self.xpoints%periods!=0:
+                print('indivisible number of periods selected')
+                exit()
+        else:
+            reduced=False
         with open(filepath) as file:
             data=load(file)
         for i in range(1,len(data)):
@@ -120,6 +128,16 @@ class calculate_Mathieu_dos:
                     gauss=array([self.psi[j][i]*exp((((j-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
                 smeared_dos+=gauss
             self.psi_smeared[:,i]+=smeared_dos
+        if reduced:
+            self.x=self.x[:,int(floor(periods/2)/periods*self.xpoints):int(floor(periods/2)+1/periods*self.xpoints)]
+            self.y=self.y[:,int(floor(periods/2)/periods*self.ypoints):int(floor(periods/2)+1/periods*self.ypoints)]
+            new_psi=zeros((self.xpoints/periods,self.ypoints))
+            new_psi_smeared=zeros((self.xpoints/periods,self.ypoints))
+            for i in range(periods):
+                new_psi+=self.psi[:,i*self.xpoints:i+1*self.xpoints]
+                new_psi_smeared+=self.psi[:,i*self.xpoints:i+1*self.xpoints]
+            self.psi=new_psi
+            self.psi_smeared=new_psi_smeared
         self.data_type='function'
         
     def sum_2D(self,filepaths,**args):
@@ -164,7 +182,7 @@ class calculate_Mathieu_dos:
             plt.figure()
             plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
             plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
-            plt.ylabel('energy / eV')
+            plt.ylabel('relative energy / eV')
             plt.xlabel('barrier height / eV')
             cbar=plt.colorbar()
             cbar.set_label('density of states / states $eV^{-1}$')
@@ -173,7 +191,7 @@ class calculate_Mathieu_dos:
             plt.figure()
             plt.title('Mathieu eigenenergies')
             plt.pcolormesh(self.x,self.y,self.eigenval,cmap='jet',shading='nearest')
-            plt.ylabel('energy / eV')
+            plt.ylabel('relative energy / eV')
             plt.xlabel('barrier height / eV')
             cbar=plt.colorbar()
             cbar.set_label('number of states')
@@ -183,7 +201,7 @@ class calculate_Mathieu_dos:
             plt.figure()
             plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
             plt.pcolormesh(self.x,self.y,self.psi_smeared,cmap='jet',shading='nearest')
-            plt.ylabel('energy / eV')
+            plt.ylabel('relative energy / eV')
             plt.xlabel('position / $\AA^{-1}$')
             cbar=plt.colorbar()
             cbar.set_label('density of states / states $eV^{-1}$')
@@ -192,7 +210,7 @@ class calculate_Mathieu_dos:
             plt.figure()
             plt.title('Mathieu functions | $\sigma$ = 0.0')
             plt.pcolormesh(self.x,self.y,self.psi,cmap='jet',shading='nearest')
-            plt.ylabel('energy / eV')
+            plt.ylabel('relative energy / eV')
             plt.xlabel('position / $\AA^{-1}$')
             cbar=plt.colorbar()
             cbar.set_label('density of states / states $eV^{-1}$')
