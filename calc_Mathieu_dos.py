@@ -102,7 +102,7 @@ class calculate_Mathieu_dos:
             normalize=False
         if 'reduced_zone' in args:
             reduced=True
-            periods=args['reduced_zone']
+            periods=int(args['reduced_zone'])
             if self.xpoints%periods!=0:
                 print('indivisible number of periods selected')
                 exit()
@@ -129,13 +129,14 @@ class calculate_Mathieu_dos:
                 smeared_dos+=gauss
             self.psi_smeared[:,i]+=smeared_dos
         if reduced:
-            self.x=self.x[:,int(floor(periods/2)/periods*self.xpoints):int(floor(periods/2)+1/periods*self.xpoints)]
-            self.y=self.y[:,int(floor(periods/2)/periods*self.ypoints):int(floor(periods/2)+1/periods*self.ypoints)]
-            new_psi=zeros((self.xpoints/periods,self.ypoints))
-            new_psi_smeared=zeros((self.xpoints/periods,self.ypoints))
+            self.x=self.x[:,:int(1/periods*self.xpoints)]
+            self.x-=x[0][0]
+            self.y=self.y[:,:int(1/periods*self.ypoints)]
+            new_psi=zeros((self.ypoints,int(self.xpoints/periods)))
+            new_psi_smeared=zeros((self.ypoints,int(self.xpoints/periods)))
             for i in range(periods):
-                new_psi+=self.psi[:,i*self.xpoints:i+1*self.xpoints]
-                new_psi_smeared+=self.psi[:,i*self.xpoints:i+1*self.xpoints]
+                new_psi+=self.psi[:,int(i/periods*self.xpoints):int((i+1)/periods*self.xpoints)]
+                new_psi_smeared+=self.psi[:,int(i/periods*self.xpoints):int((i+1)/periods*self.xpoints)]
             self.psi=new_psi
             self.psi_smeared=new_psi_smeared
         self.data_type='function'
