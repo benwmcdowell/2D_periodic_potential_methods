@@ -9,12 +9,12 @@ from sys import exit
 class calculate_Mathieu_dos:
     def __init__(self,data_type,xpoints,ypoints,xrange,yrange,**args):
         self.data_type=data_type
-        self.eigenval=zeros((xpoints,ypoints))
-        self.dos=zeros((xpoints,ypoints))
-        self.psi=zeros((xpoints,ypoints))
-        self.psi_smeared=zeros((xpoints,ypoints))
-        self.x=zeros((xpoints,ypoints))
-        self.y=zeros((xpoints,ypoints))
+        self.eigenval=zeros((ypoints,xpoints))
+        self.dos=zeros((ypoints,xpoints))
+        self.psi=zeros((ypoints,xpoints))
+        self.psi_smeared=zeros((ypoints,xpoints))
+        self.x=zeros((ypoints,xpoints))
+        self.y=zeros((ypoints,xpoints))
         self.xpoints=xpoints
         self.ypoints=ypoints
         if 'sigma' in args:
@@ -44,13 +44,13 @@ class calculate_Mathieu_dos:
             tempy=linspace(min(yrange),max(yrange),ypoints)
             self.yrange=max(yrange)-min(yrange)
         else:
-            tempy=linspace(-yrange,yrange,ypoints)
+            tempy=linspace(-yrange/2,yrange/2,ypoints)
             self.yrange=yrange
         if type(xrange)==list:
             tempx=linspace(min(xrange),max(xrange),xpoints)
             self.xrange=max(xrange)-min(xrange)
         else:
-            tempx=linspace(-xrange,xrange,xpoints)
+            tempx=linspace(-xrange/2,xrange/2,xpoints)
             self.xrange=xrange
             
         for i in range(self.ypoints):
@@ -84,15 +84,16 @@ class calculate_Mathieu_dos:
                 a=round(a/(self.yrange/self.ypoints))
                 if a>0 and a<self.ypoints:
                     self.eigenval[a][i]+=1.0
-        for j in range(self.xpoints):
-            smeared_dos=zeros(self.ypoints)
-            for i in range(self.ypoints):
-                if normalize:
-                    gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)])  #normalized gaussian
-                if not normalize:
-                    gauss=array([self.eigenval[i][j]*exp((((i-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
-                smeared_dos+=gauss
-            self.dos[:,j]+=smeared_dos
+        if self.sigma!=0.0:
+            for j in range(self.xpoints):
+                smeared_dos=zeros(self.ypoints)
+                for i in range(self.ypoints):
+                    if normalize:
+                        gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)])  #normalized gaussian
+                    if not normalize:
+                        gauss=array([self.eigenval[i][j]*exp((((i-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
+                    smeared_dos+=gauss
+                self.dos[:,j]+=smeared_dos
         self.data_type='energy'
         
     def read_json_eigenfunctions(self,filepath,**args):
@@ -111,7 +112,7 @@ class calculate_Mathieu_dos:
         with open(filepath) as file:
             data=load(file)
         for i in range(1,len(data)):
-            for j in range(1,len(data)):
+            for j in range(1,len(data[i])):
                 if type(data[i][j])==list:
                     self.psi[i-1][j-1]=0.0
                 else:
@@ -119,18 +120,19 @@ class calculate_Mathieu_dos:
         for i in range(self.ypoints):
             if max(self.psi[i])>0.0:
                 self.psi[i]/=norm(self.psi[i])
-        for i in range(self.xpoints):
-            smeared_dos=zeros(self.ypoints)
-            for j in range(self.ypoints):
-                if normalize:
-                    gauss=array([(self.psi[j][i]/self.sigma/sqrt(2*pi))*exp((((j-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)])  #normalized gaussian
-                if not normalize:
-                    gauss=array([self.psi[j][i]*exp((((j-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
-                smeared_dos+=gauss
-            self.psi_smeared[:,i]+=smeared_dos
+        if self.sigma!=0.0:
+            for i in range(self.xpoints):
+                smeared_dos=zeros(self.ypoints)
+                for j in range(self.ypoints):
+                    if normalize:
+                        gauss=array([(self.psi[j][i]/self.sigma/sqrt(2*pi))*exp((((j-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)])  #normalized gaussian
+                    if not normalize:
+                        gauss=array([self.psi[j][i]*exp((((j-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
+                    smeared_dos+=gauss
+                self.psi_smeared[:,i]+=smeared_dos
         if reduced:
             self.x=self.x[:,:int(1/periods*self.xpoints)]
-            self.x-=x[0][0]
+            self.x-=self.x[0][0]
             self.y=self.y[:,:int(1/periods*self.ypoints)]
             new_psi=zeros((self.ypoints,int(self.xpoints/periods)))
             new_psi_smeared=zeros((self.ypoints,int(self.xpoints/periods)))
@@ -153,9 +155,27 @@ class calculate_Mathieu_dos:
                 self.eigenval+=tempvar.eigenval
                 self.dos+=tempvar.dos
         if self.data_type=='function':
+            if 'reduced_zone' in args:
+                reduced=True
+                periods=int(args['reduced_zone'])
+                self.x=self.x[:,:int(1/periods*self.xpoints)]
+                self.x-=self.x[0][0]
+                self.y=self.y[:,:int(1/periods*self.ypoints)]
+                new_psi=zeros((self.ypoints,int(self.xpoints/periods)))
+                new_psi_smeared=zeros((self.ypoints,int(self.xpoints/periods)))
+                for i in range(periods):
+                    new_psi+=self.psi[:,int(i/periods*self.xpoints):int((i+1)/periods*self.xpoints)]
+                    new_psi_smeared+=self.psi[:,int(i/periods*self.xpoints):int((i+1)/periods*self.xpoints)]
+                self.psi=new_psi
+                self.psi_smeared=new_psi_smeared
+            else:
+                reduced=False
             for i in range(len(filepaths)):
                 tempvar=calculate_Mathieu_dos(self.data_type,self.xpoints,self.ypoints,[self.x[0][0],self.x[0][-1]],[self.y[0][0],self.y[-1][0]],me=self.me,sigma=self.sigma)
-                tempvar.read_json_eigenfunctions(filepaths[i])
+                if reduced:
+                    tempvar.read_json_eigenfunctions(filepaths[i],reduced_zone=periods)
+                else:
+                    tempvar.read_json_eigenfunctions(filepaths[i])
                 self.psi+=tempvar.psi
                 self.psi_smeared+=tempvar.psi_smeared
         
@@ -178,16 +198,17 @@ class calculate_Mathieu_dos:
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
     
-    def plot_dos(self):
+    def plot_dos(self,n,a):
         if self.data_type=='energy':
-            plt.figure()
-            plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
-            plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
-            plt.ylabel('relative energy / eV')
-            plt.xlabel('barrier height / eV')
-            cbar=plt.colorbar()
-            cbar.set_label('density of states / states $eV^{-1}$')
-            plt.show()
+            if self.sigma!=0.0:
+                plt.figure()
+                plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
+                plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
+                plt.ylabel('relative energy / eV')
+                plt.xlabel('barrier height / eV')
+                cbar=plt.colorbar()
+                cbar.set_label('density of states / states $eV^{-1}$')
+                plt.show()
             
             plt.figure()
             plt.title('Mathieu eigenenergies')
@@ -198,19 +219,26 @@ class calculate_Mathieu_dos:
             cbar.set_label('number of states')
             plt.show()
             
-        if self.data_type=='function':            
-            plt.figure()
-            plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
-            plt.pcolormesh(self.x,self.y,self.psi_smeared,cmap='jet',shading='nearest')
-            plt.ylabel('relative energy / eV')
-            plt.xlabel('position / $\AA^{-1}$')
-            cbar=plt.colorbar()
-            cbar.set_label('density of states / states $eV^{-1}$')
-            plt.show()
+        if self.data_type=='function':     
+            if self.sigma!=0.0:
+                plt.figure()
+                plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
+                for i in range(-n,n+1):
+                    plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap='jet',shading='nearest')
+                    if i<n:
+                        plt.plot([i*a+a/2 for j in range(2)],[self.y[0][0],self.y[-1][0]],linestyle='dashed',color='white')
+                plt.ylabel('relative energy / eV')
+                plt.xlabel('position / $\AA^{-1}$')
+                cbar=plt.colorbar()
+                cbar.set_label('density of states / states $eV^{-1}$')
+                plt.show()
             
             plt.figure()
             plt.title('Mathieu functions | $\sigma$ = 0.0')
-            plt.pcolormesh(self.x,self.y,self.psi,cmap='jet',shading='nearest')
+            for i in range(-n,n+1):
+                plt.pcolormesh(self.x+i*a,self.y,self.psi,cmap='jet',shading='nearest')
+                if i<n:
+                    plt.plot([i*a+a/2 for j in range(2)],[self.y[0][0],self.y[-1][0]],linestyle='dashed',color='white')
             plt.ylabel('relative energy / eV')
             plt.xlabel('position / $\AA^{-1}$')
             cbar=plt.colorbar()
