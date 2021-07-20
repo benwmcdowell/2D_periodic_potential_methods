@@ -101,7 +101,7 @@ class calculate_Mathieu_dos:
                 if round(j/(self.xpoints-1)*100)%25==0 and round(j/(self.xpoints-1)) in percentage_counter:
                     print('{}% finished with Gaussian smearing routine. {} s elasped so far'.format(round(j/(self.xpoints-1)*100),time()-self.start))
                     try:
-                        percentage_counter.remove(round(j/(self.xpoints-1)))
+                        percentage_counter.remove(round(j/(self.xpoints-1)*100))
                     except ValueError:
                         pass
         self.data_type='energy'
@@ -144,7 +144,7 @@ class calculate_Mathieu_dos:
                 if round(i/(self.xpoints-1)*100)%25==0:
                     print('{}% finished with Gaussian smearing routine. {} s elasped so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
                     try:
-                        percentage_counter.remove(round(j/(self.xpoints-1)))
+                        percentage_counter.remove(round(j/(self.xpoints-1)*100))
                     except ValueError:
                         pass
         if reduced:
