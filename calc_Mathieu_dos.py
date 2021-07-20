@@ -141,7 +141,7 @@ class calculate_Mathieu_dos:
                         gauss=array([self.psi[j][i]*exp((((j-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
                     smeared_dos+=gauss
                 self.psi_smeared[:,i]+=smeared_dos
-                if round(i/(self.xpoints-1)*100)%25==0:
+                if round(i/(self.xpoints-1)*100)%25==0 and round(i/(self.xpoints-1)*100) in percentage_counter:
                     print('{}% finished with Gaussian smearing routine. {} s elasped so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
                     try:
                         percentage_counter.remove(round(j/(self.xpoints-1)*100))
