@@ -1,5 +1,5 @@
 from math import pi
-from numpy import linspace,zeros,array,sqrt,exp,floor
+from numpy import linspace,zeros,array,sqrt,exp
 from numpy.linalg import norm
 from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
@@ -36,6 +36,7 @@ class calculate_Mathieu_dos:
         self.m*=self.me
         self.b=1.6022e-19 #J/eV
         self.k=0.0
+        self.sigmax=0.0
         
         if self.data_type!='energy' and self.data_type!='function':
             print('unknown data type. use either function, for plotting real space projections of Mathieu DOS, or energy, for plotting Mathieu DOS as a function of potential barrier height')
@@ -99,7 +100,7 @@ class calculate_Mathieu_dos:
                     smeared_dos+=gauss
                 self.dos[:,j]+=smeared_dos
                 if round(j/(self.xpoints-1)*100)%25==0 and round(j/(self.xpoints-1)) in percentage_counter:
-                    print('{}% finished with Gaussian smearing routine. {} s elasped so far'.format(round(j/(self.xpoints-1)*100),time()-self.start))
+                    print('{}% finished with Gaussian energy smearing routine. {} s elasped so far'.format(round(j/(self.xpoints-1)*100),time()-self.start))
                     try:
                         percentage_counter.remove(round(j/(self.xpoints-1)*100))
                     except ValueError:
@@ -107,7 +108,8 @@ class calculate_Mathieu_dos:
         self.data_type='energy'
         
     def read_json_eigenfunctions(self,filepath,**args):
-        percentage_counter=[25,50,75]
+        if 'spatial_smear' in args:
+            self.sigmax=float(args['spatial_smear'])
         if 'normalize_dos' in args:
             normalize=True
         else:
@@ -131,7 +133,9 @@ class calculate_Mathieu_dos:
         for i in range(self.ypoints):
             if max(self.psi[i])>0.0:
                 self.psi[i]/=norm(self.psi[i])
+        #energy smearing
         if self.sigma!=0.0:
+            percentage_counter=[25,50,75]
             for i in range(self.xpoints):
                 smeared_dos=zeros(self.ypoints)
                 for j in range(self.ypoints):
@@ -142,9 +146,27 @@ class calculate_Mathieu_dos:
                     smeared_dos+=gauss
                 self.psi_smeared[:,i]+=smeared_dos
                 if round(i/(self.xpoints-1)*100)%25==0 and round(i/(self.xpoints-1)*100) in percentage_counter:
-                    print('{}% finished with Gaussian smearing routine. {} s elasped so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
+                    print('{}% finished with Gaussian energy smearing routine. {} s elasped so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
                     try:
                         percentage_counter.remove(round(i/(self.xpoints-1)*100))
+                    except ValueError:
+                        pass
+        #spatial smearing
+        if self.sigmax!=0.0:
+            percentage_counter=[25,50,75]
+            for i in range(self.ypoints):
+                smeared_dos=zeros(self.xpoints)
+                for j in range(self.xpoints):
+                    if normalize:
+                        gauss=array([(self.psi[i][j]/self.sigma/sqrt(2*pi))*exp((((j-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
+                    if not normalize:
+                        gauss=array([self.psi[i][j]*exp((((j-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
+                    smeared_dos+=gauss
+                self.psi_smeared[i]+=smeared_dos
+                if round(i/(self.ypoints-1)*100)%25==0 and round(i/(self.ypoints-1)*100) in percentage_counter:
+                    print('{}% finished with Gaussian spatial smearing routine. {} s elasped so far'.format(round(i/(self.ypoints-1)*100),time()-self.start))
+                    try:
+                        percentage_counter.remove(round(i/(self.ypoints-1)*100))
                     except ValueError:
                         pass
         if reduced:
