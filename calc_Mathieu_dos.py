@@ -158,9 +158,9 @@ class calculate_Mathieu_dos:
                 smeared_dos=zeros(self.xpoints)
                 for j in range(self.xpoints):
                     if normalize:
-                        gauss=array([(self.psi[i][j]/self.sigma/sqrt(2*pi))*exp((((j-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
+                        gauss=array([(self.psi[i][j]/self.sigmax/sqrt(2*pi))*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
                     if not normalize:
-                        gauss=array([self.psi[i][j]*exp((((j-k)*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
+                        gauss=array([self.psi[i][j]*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
                     smeared_dos+=gauss
                 self.psi_smeared[i]+=smeared_dos
                 if round(i/(self.ypoints-1)*100)%25==0 and round(i/(self.ypoints-1)*100) in percentage_counter:
@@ -246,9 +246,10 @@ class calculate_Mathieu_dos:
             if self.sigma!=0.0:
                 plt.figure()
                 if len(title)==0:
-                    plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
+                    title='Mathieu density of states | $\sigma_{energy}$ = {}'.format(self.sigma)
                 else:
-                    plt.title(title+' | $\sigma$ = {}'.format(self.sigma))
+                    title+=' | $\sigma_{energy}$ = {}'.format(self.sigma)
+                plt.title(title)
                 plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
                 plt.ylabel('relative energy / eV')
                 plt.xlabel('barrier height / eV')
@@ -259,9 +260,10 @@ class calculate_Mathieu_dos:
             
             plt.figure()
             if len(title)==0:
-                plt.title('Mathieu eigenenergies | $\sigma$ = 0.0')
+                title='Mathieu eigenenergies | $\sigma_{energy}$ = 0.0'
             else:
-                plt.title(title+' | $\sigma$ = 0.0')
+                title+=' | $\sigma_{energy}$ = 0.0'
+            plt.title(title)
             plt.pcolormesh(self.x,self.y,self.eigenval,cmap='jet',shading='nearest')
             plt.ylabel('relative energy / eV')
             plt.xlabel('barrier height / eV')
@@ -274,9 +276,12 @@ class calculate_Mathieu_dos:
             if self.sigma!=0.0:
                 plt.figure()
                 if len(title)==0:
-                    plt.title('Mathieu density of states | $\sigma$ = {}'.format(self.sigma))
+                    title='Mathieu density of states | $\sigma_{energy}$ = {}'.format(self.sigma)
                 else:
-                    plt.title(title+' | $\sigma$ = {}'.format(self.sigma))
+                    title+=' | $\sigma_{energy}$ = {}'.format(self.sigma)
+                if self.sigmax!=0.0:
+                    title+=' | $\sigma_{spatial}$ = {}'.format(self.sigmax)                
+                plt.tile(title)
                 for i in range(-n,n+1):
                     plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap='jet',shading='nearest')
                     if i<n:
@@ -290,9 +295,12 @@ class calculate_Mathieu_dos:
             
             plt.figure()
             if len(title)==0:
-                plt.title('Mathieu functions | $\sigma$ = 0.0')
+                title='Mathieu functions | $\sigma_{energy}$ = 0.0'
             else:
-                plt.title(title+' | $\sigma$ = 0.0')
+                title+=' | $\sigma_{energy}$ = 0.0'
+            if self.sigmax!=0.0:
+                title+=' | $\sigma_{spatial}$ = {}'.format(self.sigmax)
+            plt.title(title)
             for i in range(-n,n+1):
                 plt.pcolormesh(self.x+i*a,self.y,self.psi,cmap='jet',shading='nearest')
                 if i<n:
