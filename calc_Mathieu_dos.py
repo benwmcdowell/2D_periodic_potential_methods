@@ -5,6 +5,7 @@ from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
 from json import load
 from sys import exit
+from time import time
 
 class calculate_Mathieu_dos:
     def __init__(self,data_type,xpoints,ypoints,xrange,yrange,**args):
@@ -58,7 +59,10 @@ class calculate_Mathieu_dos:
                 self.x[i][j]=tempx[j]
                 self.y[i][j]=tempy[i] 
         
+        self.start=time()
+        
     def read_json_eigenenergies(self,k,filepath,**args):
+        percentage_counter=[25,75,100]
         self.k=k
         if 'normalize_dos' in args:
             normalize=True
@@ -94,9 +98,16 @@ class calculate_Mathieu_dos:
                         gauss=array([self.eigenval[i][j]*exp((((i-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
                     smeared_dos+=gauss
                 self.dos[:,j]+=smeared_dos
+                if round(j/(self.xpoints-1)*100)%25==0 and round(j/(self.xpoints-1)) in percentage_counter:
+                    print('{}% finished with Gaussian smearing routine. {} s elasped so far'.format(round(j/(self.xpoints-1)*100),time()-self.start))
+                    try:
+                        percentage_counter.remove(round(j/(self.xpoints-1)))
+                    except ValueError:
+                        pass
         self.data_type='energy'
         
     def read_json_eigenfunctions(self,filepath,**args):
+        percentage_counter=[25,50,75]
         if 'normalize_dos' in args:
             normalize=True
         else:
@@ -130,6 +141,12 @@ class calculate_Mathieu_dos:
                         gauss=array([self.psi[j][i]*exp((((j-k)*self.yrange/self.ypoints)/self.sigma)**2/-2) for k in range(self.ypoints)]) #unnormalized gaussian
                     smeared_dos+=gauss
                 self.psi_smeared[:,i]+=smeared_dos
+                if round(i/(self.xpoints-1)*100)%25==0:
+                    print('{}% finished with Gaussian smearing routine. {} s elasped so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
+                    try:
+                        percentage_counter.remove(round(j/(self.xpoints-1)))
+                    except ValueError:
+                        pass
         if reduced:
             self.x=self.x[:,:int(1/periods*self.xpoints)]
             self.x-=self.x[0][0]
@@ -215,6 +232,7 @@ class calculate_Mathieu_dos:
                 plt.xlabel('barrier height / eV')
                 cbar=plt.colorbar()
                 cbar.set_label('density of states / states $eV^{-1}$')
+                plt.tight_layout()
                 plt.show()
             
             plt.figure()
@@ -227,6 +245,7 @@ class calculate_Mathieu_dos:
             plt.xlabel('barrier height / eV')
             cbar=plt.colorbar()
             cbar.set_label('number of states')
+            plt.tight_layout()
             plt.show()
             
         if self.data_type=='function':     
@@ -244,6 +263,7 @@ class calculate_Mathieu_dos:
                 plt.xlabel('position / $\AA^{-1}$')
                 cbar=plt.colorbar()
                 cbar.set_label('density of states / states $eV^{-1}$')
+                plt.tight_layout()
                 plt.show()
             
             plt.figure()
@@ -259,4 +279,7 @@ class calculate_Mathieu_dos:
             plt.xlabel('position / $\AA^{-1}$')
             cbar=plt.colorbar()
             cbar.set_label('density of states / states $eV^{-1}$')
+            plt.tight_layout()
             plt.show()
+        
+        print('total elapsed time: {} s'.format(time()-self.start))
