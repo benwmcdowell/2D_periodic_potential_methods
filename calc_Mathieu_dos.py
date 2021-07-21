@@ -239,16 +239,16 @@ class calculate_Mathieu_dos:
     
     def plot_dos(self,n,a,**args):
         if 'title' in args:
-            title=str(args['title'])
+            self.title=str(args['title'])
         else:
-            title=''
+            self.title=''
         if self.data_type=='energy':
             if self.sigma!=0.0:
                 plt.figure()
-                if len(title)==0:
-                    title='Mathieu density of states | $\sigma_{energy}$ = {}'.format(self.sigma)
+                if len(self.title)==0:
+                    title='Mathieu density of states | $\sigma_{energy}$ = ' + str(self.sigma)
                 else:
-                    title+=' | $\sigma_{energy}$ = {}'.format(self.sigma)
+                    title=self.title+' | $\sigma_{energy}$ = '+str(self.sigma)
                 plt.title(title)
                 plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
                 plt.ylabel('relative energy / eV')
@@ -259,10 +259,10 @@ class calculate_Mathieu_dos:
                 plt.show()
             
             plt.figure()
-            if len(title)==0:
+            if len(self.title)==0:
                 title='Mathieu eigenenergies | $\sigma_{energy}$ = 0.0'
             else:
-                title+=' | $\sigma_{energy}$ = 0.0'
+                title=self.title+' | $\sigma_{energy}$ = 0.0'
             plt.title(title)
             plt.pcolormesh(self.x,self.y,self.eigenval,cmap='jet',shading='nearest')
             plt.ylabel('relative energy / eV')
@@ -275,12 +275,12 @@ class calculate_Mathieu_dos:
         if self.data_type=='function':     
             if self.sigma!=0.0:
                 plt.figure()
-                if len(title)==0:
-                    title='Mathieu density of states | $\sigma_{energy}$ = {}'.format(self.sigma)
+                if len(self.title)==0:
+                    title='Mathieu density of states | $\sigma_{energy}$ = '+str(self.sigma)
                 else:
-                    title+=' | $\sigma_{energy}$ = {}'.format(self.sigma)
+                    title=self.title+' | $\sigma_{energy}$ = '+str(self.sigma)
                 if self.sigmax!=0.0:
-                    title+=' | $\sigma_{spatial}$ = {}'.format(self.sigmax)                
+                    title+=' | $\sigma_{}$ = '+str(self.sigmax)                
                 plt.tile(title)
                 for i in range(-n,n+1):
                     plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap='jet',shading='nearest')
@@ -294,12 +294,12 @@ class calculate_Mathieu_dos:
                 plt.show()
             
             plt.figure()
-            if len(title)==0:
+            if len(self.title)==0:
                 title='Mathieu functions | $\sigma_{energy}$ = 0.0'
             else:
-                title+=' | $\sigma_{energy}$ = 0.0'
+                title=self.title+' | $\sigma_{energy}$ = 0.0'
             if self.sigmax!=0.0:
-                title+=' | $\sigma_{spatial}$ = {}'.format(self.sigmax)
+                title+=' | $\sigma_{spatial}$ = '+str(self.sigmax)
             plt.title(title)
             for i in range(-n,n+1):
                 plt.pcolormesh(self.x+i*a,self.y,self.psi,cmap='jet',shading='nearest')
