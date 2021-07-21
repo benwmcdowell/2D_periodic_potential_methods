@@ -1,5 +1,5 @@
 from math import pi
-from numpy import linspace,zeros,array,sqrt,exp
+from numpy import linspace,zeros,array,sqrt,exp,ceil
 from numpy.linalg import norm
 from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
@@ -156,11 +156,12 @@ class calculate_Mathieu_dos:
             percentage_counter=[25,50,75]
             for i in range(self.ypoints):
                 smeared_dos=zeros(self.xpoints)
-                for j in range(-self.xpoints,self.xpoints*2+1):
+                x0=int(ceil(self.sigmax/self.xpoints*self.xrange))
+                for j in range(-x0,self.xpoints+x0):
                     if normalize:
-                        gauss=array([(self.psi[i][(j+self.xpoints)%self.xpoints]/self.sigmax/sqrt(2*pi))*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
+                        gauss=array([(self.psi[i][(j+x0)%self.xpoints]/self.sigmax/sqrt(2*pi))*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
                     if not normalize:
-                        gauss=array([self.psi[i][(j+self.xpoints)%self.xpoints]*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
+                        gauss=array([self.psi[i][(j+x0)%self.xpoints]*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
                     smeared_dos+=gauss
                 self.psi_smeared[i]+=smeared_dos
                 if round(i/(self.ypoints-1)*100)%25==0 and round(i/(self.ypoints-1)*100) in percentage_counter:
@@ -246,9 +247,9 @@ class calculate_Mathieu_dos:
             if self.sigma!=0.0:
                 plt.figure()
                 if len(self.title)==0:
-                    title='Mathieu density of states | $\sigma_{energy}$ = ' + str(self.sigma)
+                    title='Mathieu density of states\n$\sigma_{energy}$ = ' + str(self.sigma)
                 else:
-                    title=self.title+' | $\sigma_{energy}$ = '+str(self.sigma)
+                    title=self.title+'\n$\sigma_{energy}$ = '+str(self.sigma)+' eV'
                 plt.title(title)
                 plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
                 plt.ylabel('relative energy / eV')
@@ -260,9 +261,9 @@ class calculate_Mathieu_dos:
             
             plt.figure()
             if len(self.title)==0:
-                title='Mathieu eigenenergies | $\sigma_{energy}$ = 0.0'
+                title='Mathieu eigenenergies\n$\sigma_{energy}$ = 0.0 eV'
             else:
-                title=self.title+' | $\sigma_{energy}$ = 0.0'
+                title=self.title+'\n$\sigma_{energy}$ = 0.0 eV'
             plt.title(title)
             plt.pcolormesh(self.x,self.y,self.eigenval,cmap='jet',shading='nearest')
             plt.ylabel('relative energy / eV')
@@ -276,11 +277,11 @@ class calculate_Mathieu_dos:
             if self.sigma!=0.0:
                 plt.figure()
                 if len(self.title)==0:
-                    title='Mathieu density of states | $\sigma_{energy}$ = '+str(self.sigma)
+                    title='Mathieu density of states\n$\sigma_{energy}$ = '+str(self.sigma)+' eV'
                 else:
-                    title=self.title+' | $\sigma_{energy}$ = '+str(self.sigma)
+                    title=self.title+'\n$\sigma_{energy}$ = '+str(self.sigma)+' eV'
                 if self.sigmax!=0.0:
-                    title+=' | $\sigma_{}$ = '+str(self.sigmax)                
+                    title+=' | $\sigma_{}$ = '+str(self.sigmax)+' $\AA$'             
                 plt.title(title)
                 for i in range(-n,n+1):
                     plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap='jet',shading='nearest')
@@ -295,11 +296,11 @@ class calculate_Mathieu_dos:
             
             plt.figure()
             if len(self.title)==0:
-                title='Mathieu functions | $\sigma_{energy}$ = 0.0'
+                title='Mathieu functions\n$\sigma_{energy}$ = 0.0 eV'
             else:
-                title=self.title+' | $\sigma_{energy}$ = 0.0'
+                title=self.title+' | $\sigma_{energy}$ = 0.0 eV'
             if self.sigmax!=0.0:
-                title+=' | $\sigma_{spatial}$ = '+str(self.sigmax)
+                title+=' | $\sigma_{spatial}$ = '+str(self.sigmax)+' $\AA$'
             plt.title(title)
             for i in range(-n,n+1):
                 plt.pcolormesh(self.x+i*a,self.y,self.psi,cmap='jet',shading='nearest')
