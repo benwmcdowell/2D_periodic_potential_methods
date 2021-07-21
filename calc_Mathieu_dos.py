@@ -164,9 +164,9 @@ class calculate_Mathieu_dos:
                 smeared_dos=zeros(self.xpoints)
                 for j in range(-x0,self.xpoints+x0):
                     if normalize:
-                        gauss=array([psi_copy[i][(j+self.xpoints)%self.xpoints]/self.sigmax/sqrt(2*pi)*mask[abs(j-k)] for k in range(self.xpoints)])  #normalized gaussian
+                        gauss=array([psi_copy[i][j%self.xpoints]/self.sigmax/sqrt(2*pi)*mask[abs(j-k)] for k in range(self.xpoints)])  #normalized gaussian
                     if not normalize:
-                        gauss=array([psi_copy[i][(j+self.xpoints)%self.xpoints]*mask[abs(j-k)] for k in range(self.xpoints)]) #unnormalized gaussian
+                        gauss=array([psi_copy[i][j%self.xpoints]*mask[abs(j-k)] for k in range(self.xpoints)]) #unnormalized gaussian
                     smeared_dos+=gauss
                 self.psi_smeared[i]+=smeared_dos
                 if round(i/(self.ypoints-1)*100)%25==0 and round(i/(self.ypoints-1)*100) in percentage_counter:
