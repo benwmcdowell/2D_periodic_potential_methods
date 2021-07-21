@@ -156,11 +156,11 @@ class calculate_Mathieu_dos:
             percentage_counter=[25,50,75]
             for i in range(self.ypoints):
                 smeared_dos=zeros(self.xpoints)
-                for j in range(self.xpoints):
+                for j in range(-self.xpoints,self.xpoints*2+1):
                     if normalize:
-                        gauss=array([(self.psi[i][j]/self.sigmax/sqrt(2*pi))*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
+                        gauss=array([(self.psi[i][(j+self.xpoints)%self.xpoints]/self.sigmax/sqrt(2*pi))*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)])  #normalized gaussian
                     if not normalize:
-                        gauss=array([self.psi[i][j]*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
+                        gauss=array([self.psi[i][(j+self.xpoints)%self.xpoints]*exp((((j-k)*self.xrange/self.xpoints)/self.sigmax)**2/-2) for k in range(self.xpoints)]) #unnormalized gaussian
                     smeared_dos+=gauss
                 self.psi_smeared[i]+=smeared_dos
                 if round(i/(self.ypoints-1)*100)%25==0 and round(i/(self.ypoints-1)*100) in percentage_counter:
@@ -281,7 +281,7 @@ class calculate_Mathieu_dos:
                     title=self.title+' | $\sigma_{energy}$ = '+str(self.sigma)
                 if self.sigmax!=0.0:
                     title+=' | $\sigma_{}$ = '+str(self.sigmax)                
-                plt.tile(title)
+                plt.title(title)
                 for i in range(-n,n+1):
                     plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap='jet',shading='nearest')
                     if i<n:
