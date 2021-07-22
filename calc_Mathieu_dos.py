@@ -1,5 +1,5 @@
 from math import pi
-from numpy import linspace,zeros,array,sqrt,exp,ceil
+from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin
 from numpy.linalg import norm
 from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
@@ -22,7 +22,7 @@ class calculate_Mathieu_dos:
         if 'sigma' in args:
             self.sigma=float(args['sigma'])
         else:
-            self.sigma=0.001 #ev, gaussian smearing parameter
+            self.sigma=0.0 #ev, gaussian smearing parameter
         if 'auto_axes' in args:
             self.auto_axes=True
         else:
@@ -108,7 +108,7 @@ class calculate_Mathieu_dos:
                         pass
         self.data_type='energy'
         
-    def read_json_eigenfunctions(self,filepath,**args):
+    def read_json_eigenfunctions(self,function_filepath,energy_filepath,**args):
         if 'spatial_smear' in args:
             self.sigmax=float(args['spatial_smear'])
         if 'normalize_dos' in args and not args['normalize_dos']:
@@ -123,14 +123,17 @@ class calculate_Mathieu_dos:
                 exit()
         else:
             reduced=False
-        with open(filepath) as file:
+        with open(function_filepath) as file:
             data=load(file)
+        with open(energy_filepath) as file:
+            edata=load(file)
         for i in range(1,len(data)):
             for j in range(1,len(data[i])):
+                counter=argmin([abs(self.y[k][0]-float(edata[i])) for k in range(self.ypoints)])
                 if type(data[i][j])==list:
-                    self.psi[i-1][j-1]=0.0
+                    pass
                 else:
-                    self.psi[i-1][j-1]=float(data[i][j])**2
+                    self.psi[counter][j-1]=float(data[i][j])**2
         for i in range(self.ypoints):
             if max(self.psi[i])>0.0:
                 self.psi[i]/=norm(self.psi[i])
@@ -286,7 +289,7 @@ class calculate_Mathieu_dos:
                 else:
                     title=self.title+'\n$\sigma_{energy}$ = '+str(self.sigma)+' eV'
                 if self.sigmax!=0.0:
-                    title+=' | $\sigma_{}$ = '+str(self.sigmax)+' $\AA$'             
+                    title+=' | $\sigma_{spatial}$ = '+str(self.sigmax)+' $\AA$'             
                 plt.title(title)
                 for i in range(-n,n+1):
                     plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap='jet',shading='nearest')
