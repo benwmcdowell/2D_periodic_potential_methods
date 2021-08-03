@@ -1,37 +1,40 @@
 from numpy import array,dot
-from shutil import copyfile
-from os import mkdir,chdir
-from os.path import exists
-from sys import exit
+from numpy.linalg import inv
+from shutil import copyfile,rmtree
+import os.path
+import sys
+import os
 
 def create_VASP_directories(template,output,npts,lvmin,lvmax):
-    if exists(output):
-        chdir(output)
+    if os.path.exists(output):
+        os.chdir(output)
     else:
-        mkdir(output)
-        chdir(output)
+        os.mkdir(output)
+        os.chdir(output)
     for i in range(npts):
         for j in range(npts):
             sf=[(lvmax-lvmin)*k/(npts-1)+lvmin for k in [i,j]]
             name=str(sf[0])+','+str(sf[1])
-            mkdir(name)
+            if os.path.exists(name):
+                rmtree(name)
+            os.mkdir(name)
             
             for k in ['KPOINTS','INCAR','POTCAR']:
-                copyfile(template+k,output+name+k)
-            with open(template+'job.sh') as file:
+                copyfile(os.path.join(template,k),os.path.join(output,name,k))
+            with open(os.path.join(template,'job.sh')) as file:
                 lines=file.readlines()
-                for k in range(len(lines)):
-                    if 'job-name' in lines[j]:
-                        tempvar=lines[k].split('=')
-                        lines[k]=tempvar[0]+'='+name+' '+tempvar[1]
-            with open(output+name+'job.sh','w') as file:
+            for k in range(len(lines)):
+                if 'job-name' in lines[k]:
+                    tempvar=lines[k].split('=')
+                    lines[k]=tempvar[0]+'='+name+' '+tempvar[1]
+            with open(os.path.join(output,name,'job.sh'),'w') as file:
                 for k in lines:
                     file.write(k)
             
-            lv,coord,atomtypes,atomnums=parse_poscar(template+'POSCAR')
+            lv,coord,atomtypes,atomnums=parse_poscar(os.path.join(template,'POSCAR'))
             for k in range(2):
                 lv[k]*=sf[k]
-            write_poscar(output+name,lv,coord,atomtypes,atomnums)
+            write_poscar(os.path.join(output,name,'POSCAR'),lv,coord,atomtypes,atomnums)
     
     print(str(npts**2)+' VASP directories written')
 
@@ -100,4 +103,3 @@ def write_poscar(ofile, lv, coord, atomtypes, atomnums, **args):
                     file.write('  ')
                     file.write(args['seldyn'][i][j])
             file.write('\n')
-    print('new POSCAR written to: '+str(ofile))
