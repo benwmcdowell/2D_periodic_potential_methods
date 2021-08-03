@@ -58,7 +58,7 @@ def plot_band_gap(filepath,lv_ref,**args):
         os.chdir(filepath)
         os.chdir(os.path.join(filepath,files[i]))
         dos,energies=parse_doscar('./DOSCAR')[:2]
-        unsortedz.append(find_band_gap(energies,dos))
+        unsortedz.append(find_band_gap(energies,dos,tol=tol))
         lv=parse_poscar('./POSCAR')[0]
         unsortedx.append((norm(lv[0])/lv_ref[0]-1)*100)
         unsortedy.append((norm(lv[1])/lv_ref[1]-1)*100)
@@ -97,7 +97,7 @@ def find_band_gap(energies,dos,**args):
         tol=5
     edge_energies=[0.0,0.0]
     for i in range(5,len(energies)-5):
-        if argmax(dos[i-5:i+5])==i:
+        if argmax(dos[i-tol:i+tol])==i:
             if energies[i]<0.0:
                 edge_energies[0]=energies[i]
             if energies[i]>0.0:
