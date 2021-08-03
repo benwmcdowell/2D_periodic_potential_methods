@@ -1,8 +1,8 @@
-from numpy import array,dot
-from numpy.linalg import inv
+from numpy import array,dot,sqrt,zeros,argmin,argmax
+from numpy.linalg import inv,norm
 from shutil import copyfile,rmtree
+import matplotlib.pyplot as plt
 import os.path
-import sys
 import os
 
 def create_VASP_directories(template,output,npts,lvmin,lvmax):
@@ -41,7 +41,114 @@ def create_VASP_directories(template,output,npts,lvmin,lvmax):
             write_poscar(os.path.join(output,name,'POSCAR'),lv,coord,atomtypes,atomnums)
     
     print(str(npts**2)+' VASP directories written')
+    
+def plot_band_gap(filepath,lv_ref,**args):
+    if 'tol' in args:
+        tol=args['tol']
+    else:
+        tol=5
+    files=os.listdir(filepath)
+    npts=int(sqrt(len(files)))
+    unsortedx=[]
+    unsortedy=[]
+    unsortedz=[]
+    lv_ref=parse_poscar('./POSCAR')[0][:2]
+    lv_ref=[norm(i) for i in lv_ref]
+    for i in range(npts**2):
+        os.chdir(filepath)
+        os.chdir(os.path.join(filepath,files[i]))
+        dos,energies=parse_doscar('./DOSCAR')[:2]
+        unsortedz.append(find_band_gap(energies,dos))
+        lv=parse_poscar('./POSCAR')[0]
+        unsortedx.append((norm(lv[0])/lv_ref[0]-1)*100)
+        unsortedy.append((norm(lv[1])/lv_ref[1]-1)*100)
+        
+    x=zeros((npts,npts))
+    y=zeros((npts,npts))
+    z=zeros((npts,npts))
+    for i in range(npts):
+        for j in range(npts):
+            tempvar=[[],[],[]]
+            for k in range(len(unsortedy)):
+                if unsortedy[i]==min(unsortedy):
+                    tempvar[0].append(unsortedx[i])
+                    tempvar[1].append(unsortedy[i])
+                    tempvar[2].append(unsortedz[i])
+            k=argmin(tempvar[0])
+            x[i][j]=tempvar[0][k]
+            y[i][j]=tempvar[1][k]
+            z[i][j]=tempvar[2][k]
+            unsortedx.pop(tempvar[0][k])
+            unsortedy.pop(tempvar[1][k])
+            unsortedz.pop(tempvar[2][k])
+            
+    plt.figure()
+    plt.pcolormesh(x,y,z,shading='nearest',cmap='jet')
+    plt.xlabel('% distortion of lattice vector #1')
+    plt.xlabel('% distortion of lattice vector #1')
+    cbar=plt.colorbar()
+    cbar.set_label('band gap / eV')
+    plt.show()
+            
+def find_band_gap(energies,dos,**args):
+    if 'tol' in args:
+        tol=args['tol']
+    else:
+        tol=5
+    edge_energies=[0.0,0.0]
+    for i in range(5,len(energies)-5):
+        if argmax(dos[i-5:i+5])==i:
+            if energies[i]<0.0:
+                edge_energies[0]=energies[i]
+            if energies[i]>0.0:
+                edge_energies[1]=energies[i]
+    
+    bg=edge_energies[1]-edge_energies[0]
+    return bg
 
+#reads DOSCAR
+def parse_doscar(filepath):
+    with open(filepath,'r') as file:
+        line=file.readline().split()
+        atomnum=int(line[0])
+        for i in range(5):
+            line=file.readline().split()
+        nedos=int(line[2])
+        ef=float(line[3])
+        dos=[]
+        energies=[]
+        for i in range(atomnum+1):
+            if i!=0:
+                line=file.readline()
+            for j in range(nedos):
+                line=file.readline().split()
+                if i==0:
+                    energies.append(float(line[0]))
+                if j==0:
+                    temp_dos=[[] for k in range(len(line)-1)]
+                for k in range(len(line)-1):
+                    temp_dos[k].append(float(line[k+1]))
+            dos.append(temp_dos)
+    energies=array(energies)-ef
+    
+    #orbitals contains the type of orbital found in each array of the site projected dos
+    num_columns=shape(dos[1:])[1]
+    if num_columns==3:
+        orbitals=['s','p','d']
+    elif num_columns==6:
+        orbitals=['s_up','s_down','p_up','p_down','d_up','d_down']
+    elif num_columns==9:
+        orbitals=['s','p_y','p_z','p_x','d_xy','d_yz','d_z2','d_xz','d_x2-y2']
+    elif num_columns==18:
+        orbitals=['s_up','s_down','p_y_up','p_y_down','p_z_up','p_z_down','p_x_up','p_x_down','d_xy_up','d_xy_down','d_yz_up','d_yz_down','d_z2_up','d_z2_down','d_xz_up','d_xz_down','d_x2-y2_up','d_x2-y2_down']
+        
+    #dos is formatted as [[total dos],[atomic_projected_dos for i in range(atomnum)]]
+    #total dos has a shape of (4,nedos): [[spin up],[spin down],[integrated, spin up],[integrated spin down]]
+    #atomic ldos have shapes of (6,nedos): [[i,j] for j in [spin up, spin down] for i in [s,p,d]]
+    #energies has shape (1,nedos) and contains the energies that each dos should be plotted against
+    return dos, energies, ef, orbitals
+
+#reads POSCAR
 def parse_poscar(ifile):
     with open(ifile, 'r') as file:
         lines=file.readlines()
@@ -75,6 +182,7 @@ def parse_poscar(ifile):
     except NameError:
         return latticevectors, coord, atomtypes, atomnums
 
+#writes POSCAR
 def write_poscar(ofile, lv, coord, atomtypes, atomnums, **args):
     with open(ofile,'w') as file:
         if 'title' in args:
