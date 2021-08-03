@@ -32,8 +32,12 @@ def create_VASP_directories(template,output,npts,lvmin,lvmax):
                     file.write(k)
             
             lv,coord,atomtypes,atomnums=parse_poscar(os.path.join(template,'POSCAR'))
+            for k in range(len(coord)):
+                coord[k]=dot(coord[k],inv(lv))
             for k in range(2):
                 lv[k]*=sf[k]
+            for k in range(len(coord)):
+                coord[k]=dot(coord[k],lv)
             write_poscar(os.path.join(output,name,'POSCAR'),lv,coord,atomtypes,atomnums)
     
     print(str(npts**2)+' VASP directories written')
