@@ -1,4 +1,4 @@
-from numpy import array,dot,sqrt,zeros,argmin,argmax
+from numpy import array,dot,sqrt,zeros,argmin,argmax,shape
 from numpy.linalg import inv,norm
 from shutil import copyfile,rmtree
 import matplotlib.pyplot as plt
@@ -46,19 +46,28 @@ def plot_band_gap(filepath,lv_ref,**args):
     if 'tol' in args:
         tol=args['tol']
     else:
-        tol=5
+        tol=10
     files=os.listdir(filepath)
     npts=int(sqrt(len(files)))
     unsortedx=[]
     unsortedy=[]
     unsortedz=[]
-    lv_ref=parse_poscar('./POSCAR')[0][:2]
+    lv_ref=parse_poscar(lv_ref)[0][:2]
     lv_ref=[norm(i) for i in lv_ref]
     for i in range(npts**2):
         os.chdir(filepath)
         os.chdir(os.path.join(filepath,files[i]))
-        dos,energies=parse_doscar('./DOSCAR')[:2]
-        unsortedz.append(find_band_gap(energies,dos,tol=tol))
+        try:
+            dos,energies=parse_doscar('./DOSCAR')[:2]
+            total_dos=zeros(len(energies))
+            for j in range(1,len(dos)):
+                for k in dos[j]:
+                    total_dos+=k
+            unsortedz.append(find_band_gap(energies,total_dos,tol=tol))
+        except:
+            print('error in directory: {}'.format(files[i]))
+            unsortedz.append(0.0)
+            pass
         lv=parse_poscar('./POSCAR')[0]
         unsortedx.append((norm(lv[0])/lv_ref[0]-1)*100)
         unsortedy.append((norm(lv[1])/lv_ref[1]-1)*100)
@@ -70,38 +79,40 @@ def plot_band_gap(filepath,lv_ref,**args):
         for j in range(npts):
             tempvar=[[],[],[]]
             for k in range(len(unsortedy)):
-                if unsortedy[i]==min(unsortedy):
-                    tempvar[0].append(unsortedx[i])
-                    tempvar[1].append(unsortedy[i])
-                    tempvar[2].append(unsortedz[i])
+                if unsortedy[k]==min(unsortedy):
+                    tempvar[0].append(unsortedx[k])
+                    tempvar[1].append(unsortedy[k])
+                    tempvar[2].append(unsortedz[k])
             k=argmin(tempvar[0])
             x[i][j]=tempvar[0][k]
             y[i][j]=tempvar[1][k]
             z[i][j]=tempvar[2][k]
-            unsortedx.pop(tempvar[0][k])
-            unsortedy.pop(tempvar[1][k])
-            unsortedz.pop(tempvar[2][k])
+            unsortedx.remove(tempvar[0][k])
+            unsortedy.remove(tempvar[1][k])
+            unsortedz.remove(tempvar[2][k])
             
     plt.figure()
     plt.pcolormesh(x,y,z,shading='nearest',cmap='jet')
     plt.xlabel('% distortion of lattice vector #1')
-    plt.xlabel('% distortion of lattice vector #1')
+    plt.ylabel('% distortion of lattice vector #2')
     cbar=plt.colorbar()
     cbar.set_label('band gap / eV')
+    plt.tight_layout()
     plt.show()
             
 def find_band_gap(energies,dos,**args):
     if 'tol' in args:
         tol=args['tol']
     else:
-        tol=5
+        tol=10
     edge_energies=[0.0,0.0]
-    for i in range(5,len(energies)-5):
-        if argmax(dos[i-tol:i+tol])==i:
+    for i in range(tol,len(energies)-tol):
+        if max(dos[i-tol:i+tol])==dos[i]:
             if energies[i]<0.0:
                 edge_energies[0]=energies[i]
             if energies[i]>0.0:
                 edge_energies[1]=energies[i]
+                break
     
     bg=edge_energies[1]-edge_energies[0]
     return bg
