@@ -28,14 +28,15 @@ def plot_Moire_2d(a,b,**args):
                     if (counter*a[i]+dx)%b[i]>(counter*a[i]-dx)%b[i]:
                         dx*=-1
                     for j in range(len(x[i])):
-                        x[i][j]-=dx*(len(x[i])-1-j)
-                        y[i][j]-=dx*(len(x[i])-1-j)
+                        x[i][j]-=dx*(j/(len(x[i])-1))
+                        y[i][j]-=dx*(j/(len(y[i])-1))
+                    print('lattice vector #{} distorted by {} %'.format(i,dx/x[i][-1]*100))
             counter+=1
                     
-                
-    plt.figure()
+    fig,ax=plt.subplots(1,1)
     for i in range(2):
-        plt.scatter(x[i],y[i])
-    plt.xlabel('distance')
-    plt.ylabel('distance between nearest lattice sites')
+        ax.scatter(x[i],y[i],s=500)
+    ax.set_xlabel('distance along lattice vector / $\AA$')
+    ax.set_ylabel('distance between nearest lattice sites / $\AA$')
+    plt.tight_layout()
     plt.show()
