@@ -1,5 +1,5 @@
 from math import pi
-from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin
+from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin,average,cos
 from numpy.linalg import norm
 from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
@@ -7,6 +7,8 @@ from json import load
 from sys import exit
 from time import time
 from copy import deepcopy
+from scipy.fft import fft,fftfreq
+from scipy.signal.windows import hann
 
 class calculate_Mathieu_dos:
     def __init__(self,data_type,xpoints,ypoints,xrange,yrange,**args):
@@ -259,6 +261,30 @@ class calculate_Mathieu_dos:
                 gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*2*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
+    
+    def plot_fft(self,**args):
+        plt.figure()
+        if 'window' in args:
+            w=hann(self.xpoints,sym=False)
+        else:
+            w=array([1.0 for i in range(self.xpoints)])
+        if 'normalize' in args:
+            normalize=True
+        else:
+            normalize=False
+            
+        zf=zeros((self.ypoints,self.xpoints//2))
+        xf=zeros((self.ypoints,self.xpoints//2))
+        for i in range(self.ypoints):
+            zf[i]+=abs(fft((self.psi_smeared[i]-average(self.psi_smeared[i]))*w)[0:self.xpoints//2])*2.0/self.xpoints
+            if normalize:
+                zf[i]/=sum(zf[i])
+            xf[i]+=fftfreq(self.xpoints,self.xrange/(self.xpoints-1))[:self.xpoints//2]
+        plt.pcolormesh(xf,self.y[:,:self.xpoints//2],zf,cmap='jet',shading='nearest')
+        plt.xlabel('momentum / $\AA^{-1}$')
+        plt.ylabel('energy / eV')
+        plt.tight_layout()
+        plt.show()
     
     def plot_dos(self,n,a,**args):
         if 'title' in args:
