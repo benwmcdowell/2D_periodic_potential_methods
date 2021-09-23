@@ -1,5 +1,5 @@
 from math import pi
-from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin,average,cos
+from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin,shape,abs,average,cos
 from numpy.linalg import norm
 from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
@@ -67,10 +67,6 @@ class calculate_Mathieu_dos:
         
     def read_json_eigenenergies(self,k,filepath,**args):
         self.k=k
-        if 'normalize_dos' in args and not args['normalize_dos']:
-            normalize=False
-        else:
-            normalize=True
         with open(filepath) as file:
             data=load(file)
             data=array([[float(i[j]) for j in range(1,len(i))] for i in data[1:]])
@@ -99,6 +95,7 @@ class calculate_Mathieu_dos:
             normalize=args['normalize']
         else:
             normalize=True
+        scale=sqrt(2*pi)*self.sigma
         if self.data_type=='energy':
             percentage_counter=[25,75,100]
             for j in range(self.xpoints):
@@ -118,23 +115,21 @@ class calculate_Mathieu_dos:
                         pass
         elif self.data_type=='function':
             percentage_counter=[25,50,75]
-            x0=int(ceil(self.sigma/self.ypoints*self.yrange))
             mask=array([exp(((j*self.yrange/self.ypoints)/self.sigma)**2/-2) for j in range(self.ypoints)])
             for i in range(self.xpoints):
-                smeared_dos=zeros(self.ypoints)
                 for j in range(self.ypoints):
                     if normalize:
-                        gauss=array([(self.psi_copy[j][i]/self.sigma/sqrt(2*pi))*mask[abs(j-k)] for k in range(self.ypoints)])  #normalized gaussian
-                    if not normalize:
-                        gauss=array([self.psi_copy[j][i]*mask[abs(j-k)] for k in range(self.ypoints)]) #unnormalized gaussian
-                    smeared_dos+=gauss
-                self.psi_smeared[:,i]+=smeared_dos
+                        gauss=array([self.psi_smeared_copy[j][i]/scale*mask[abs(j-k)] for k in range(self.ypoints)])  #normalized gaussian
+                    elif not normalize:
+                        gauss=array([self.psi_smeared_copy[j][i]*mask[abs(j-k)] for k in range(self.ypoints)]) #unnormalized gaussian
+                    self.psi_smeared[:,i]+=gauss
                 if round(i/(self.xpoints-1)*100)%25==0 and round(i/(self.xpoints-1)*100) in percentage_counter:
-                    print('{}% finished with Gaussian energy smearing routine. {} s elasped so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
+                    print('{}% finished with Gaussian energy smearing routine. {} s elapsed so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
                     try:
                         percentage_counter.remove(round(i/(self.xpoints-1)*100))
                     except ValueError:
                         pass
+            self.psi_smeared_copy=deepcopy(self.psi_smeared)
         
     def smear_spatial(self,**args):
         if 'normalize' in args:
@@ -144,25 +139,26 @@ class calculate_Mathieu_dos:
         percentage_counter=[25,50,75]
         x0=int(ceil(5*self.sigmax*self.xpoints/self.xrange))
         mask=array([exp((j*self.xrange/self.xpoints/self.sigmax)**2/-2) for j in range(self.xpoints+2*x0)])
+        scale=sqrt(2*pi)*self.sigmax
         for i in range(self.ypoints):
-            smeared_dos=zeros(self.xpoints)
             for j in range(-x0,self.xpoints+x0):
                 if normalize:
-                    gauss=array([self.psi_copy[i][j%self.xpoints]/self.sigmax/sqrt(2*pi)*mask[abs(j-k)] for k in range(self.xpoints)])  #normalized gaussian
+                    gauss=array([self.psi_smeared_copy[i][j%self.xpoints]/scale*mask[abs(j-k)] for k in range(self.xpoints)])  #normalized gaussian
                 if not normalize:
-                    gauss=array([self.psi_copy[i][j%self.xpoints]*mask[abs(j-k)] for k in range(self.xpoints)]) #unnormalized gaussian
-                smeared_dos+=gauss
-            self.psi_smeared[i]+=smeared_dos
+                    gauss=array([self.psi_smeared_copy[i][j%self.xpoints]*mask[abs(j-k)] for k in range(self.xpoints)]) #unnormalized gaussian
+                self.psi_smeared[i]+=gauss
             if round(i/(self.ypoints-1)*100)%25==0 and round(i/(self.ypoints-1)*100) in percentage_counter:
-                print('{}% finished with Gaussian spatial smearing routine. {} s elasped so far'.format(round(i/(self.ypoints-1)*100),time()-self.start))
+                print('{}% finished with Gaussian spatial smearing routine. {} s elapsed so far'.format(round(i/(self.ypoints-1)*100),time()-self.start))
                 try:
                     percentage_counter.remove(round(i/(self.ypoints-1)*100))
                 except ValueError:
                     pass
-        
+        self.psi_smeared_copy=deepcopy(self.psi_smeared)
+                
     def read_json_eigenfunctions(self,function_filepath,energy_filepath,**args):
-        if 'spatial_smear' in args:
-            self.sigmax=float(args['spatial_smear'])
+        self.eigenval=zeros(self.ypoints)
+        if 'sigmax' in args:
+            self.sigmax=float(args['sigmax'])
         if 'prob_density' in args:
             prob_density=args['prob_density']
         else:
@@ -180,20 +176,20 @@ class calculate_Mathieu_dos:
         with open(energy_filepath) as file:
             edata=load(file)
         for i in range(1,len(data)):
-            for j in range(1,len(data[i])):
-                if type(data[i][j])==list:
-                    pass
-                else:
-                    if edata[j]<max(self.y[:,0]) and edata[j]>min(self.y[:,0]):
-                        counter=argmin([abs(self.y[k][0]-float(edata[j])) for k in range(self.ypoints)])
-                        if prob_density:
-                            self.psi[counter][j-1]=float(data[i][j])**2
+            if type(edata[i])==list:
+                pass
+            else:
+                counter=round((self.ypoints)*(float(edata[i])-min(self.y[:,0]))/self.yrange)-1
+                if counter>0 and counter<self.ypoints:
+                    self.eigenval[counter]+=1
+                    for j in range(1,len(data[i])):
+                        if type(data[i][j])==list:
+                            pass
                         else:
-                            self.psi[counter][j-1]=float(data[i][j])
-        for i in range(self.ypoints):
-            if max(self.psi[i])>0.0:
-                self.psi[i]/=norm(self.psi[i])
-        self.psi_copy=deepcopy(self.psi)
+                            if prob_density:
+                                self.psi[counter][j-1]+=float(data[i][j])**2
+                            else:
+                                self.psi[counter][j-1]+=float(data[i][j])
         if reduced:
             self.x=self.x[:,:int(1/periods*self.xpoints)]
             self.x-=self.x[0][0]
@@ -205,7 +201,14 @@ class calculate_Mathieu_dos:
                 new_psi_smeared+=self.psi[:,int(i/periods*self.xpoints):int((i+1)/periods*self.xpoints)]
             self.psi=new_psi
             self.psi_smeared=new_psi_smeared
+            
+        self.psi_smeared_copy=deepcopy(self.psi)
         self.data_type='function'
+        
+    def normalize(self):
+        for i in range(self.ypoints):
+            if max(self.psi[i])>0.0:
+                self.psi[i]*=self.eigenval[i]/norm(self.psi[i])
         
     def sum_2D(self,filepaths,**args):
         if self.data_type=='energy':
@@ -261,7 +264,7 @@ class calculate_Mathieu_dos:
                 gauss=array([(self.eigenval[i][j]/self.sigma/sqrt(2*pi))*exp((((i-k)*2*self.xrange/self.xpoints)/self.sigma)**2/-2) for k in range(self.xpoints)])
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
-    
+            
     def plot_fft(self,**args):
         plt.figure()
         if 'window' in args:
