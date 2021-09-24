@@ -265,6 +265,21 @@ class calculate_Mathieu_dos:
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
             
+    def overlay_tunneling_probability(self,d,phi):
+        def tunneling_factor(V,E,phi):
+            V*=1.60218e-19
+            E*=1.60218e-19
+            phi*=1.60218e-19
+            prefactor=8/3/V*pi*sqrt(2*9.11e-31)/6.626e-34
+            barrier=(phi-E+V)**(3/2)-(phi-E)**(3/2)
+            return prefactor*barrier
+        
+        for i in range(self.ypoints):
+            k=tunneling_factor(abs(self.y[i][0]),abs(self.y[i][0]),phi)
+            self.psi[i]*=exp(-k*1e-10*d)
+            self.psi_smeared[i]*=exp(-k*1e-10*d)
+            self.psi_smeared_copy[i]*=exp(-k*1e-10*d)
+            
     def plot_fft(self,**args):
         plt.figure()
         if 'window' in args:
