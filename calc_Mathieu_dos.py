@@ -114,14 +114,15 @@ class calculate_Mathieu_dos:
                     except ValueError:
                         pass
         elif self.data_type=='function':
+            psi_smeared_copy=deepcopy(self.psi_smeared)
             percentage_counter=[25,50,75]
             mask=array([exp(((j*self.yrange/self.ypoints)/self.sigma)**2/-2) for j in range(self.ypoints)])
             for i in range(self.xpoints):
                 for j in range(self.ypoints):
                     if normalize:
-                        gauss=array([self.psi_smeared_copy[j][i]/scale*mask[abs(j-k)] for k in range(self.ypoints)])  #normalized gaussian
+                        gauss=array([psi_smeared_copy[j][i]/scale*mask[abs(j-k)] for k in range(self.ypoints)])  #normalized gaussian
                     elif not normalize:
-                        gauss=array([self.psi_smeared_copy[j][i]*mask[abs(j-k)] for k in range(self.ypoints)]) #unnormalized gaussian
+                        gauss=array([psi_smeared_copy[j][i]*mask[abs(j-k)] for k in range(self.ypoints)]) #unnormalized gaussian
                     self.psi_smeared[:,i]+=gauss
                 if round(i/(self.xpoints-1)*100)%25==0 and round(i/(self.xpoints-1)*100) in percentage_counter:
                     print('{}% finished with Gaussian energy smearing routine. {} s elapsed so far'.format(round(i/(self.xpoints-1)*100),time()-self.start))
@@ -129,13 +130,13 @@ class calculate_Mathieu_dos:
                         percentage_counter.remove(round(i/(self.xpoints-1)*100))
                     except ValueError:
                         pass
-            self.psi_smeared_copy=deepcopy(self.psi_smeared)
         
     def smear_spatial(self,**args):
         if 'normalize' in args:
             normalize=args['normalize']
         else:
             normalize=True
+        psi_smeared_copy=deepcopy(self.psi_smeared)
         percentage_counter=[25,50,75]
         x0=int(ceil(5*self.sigmax*self.xpoints/self.xrange))
         mask=array([exp((j*self.xrange/self.xpoints/self.sigmax)**2/-2) for j in range(self.xpoints+2*x0)])
@@ -143,9 +144,9 @@ class calculate_Mathieu_dos:
         for i in range(self.ypoints):
             for j in range(-x0,self.xpoints+x0):
                 if normalize:
-                    gauss=array([self.psi_smeared_copy[i][j%self.xpoints]/scale*mask[abs(j-k)] for k in range(self.xpoints)])  #normalized gaussian
+                    gauss=array([psi_smeared_copy[i][j%self.xpoints]/scale*mask[abs(j-k)] for k in range(self.xpoints)])  #normalized gaussian
                 if not normalize:
-                    gauss=array([self.psi_smeared_copy[i][j%self.xpoints]*mask[abs(j-k)] for k in range(self.xpoints)]) #unnormalized gaussian
+                    gauss=array([psi_smeared_copy[i][j%self.xpoints]*mask[abs(j-k)] for k in range(self.xpoints)]) #unnormalized gaussian
                 self.psi_smeared[i]+=gauss
             if round(i/(self.ypoints-1)*100)%25==0 and round(i/(self.ypoints-1)*100) in percentage_counter:
                 print('{}% finished with Gaussian spatial smearing routine. {} s elapsed so far'.format(round(i/(self.ypoints-1)*100),time()-self.start))
@@ -153,10 +154,12 @@ class calculate_Mathieu_dos:
                     percentage_counter.remove(round(i/(self.ypoints-1)*100))
                 except ValueError:
                     pass
-        self.psi_smeared_copy=deepcopy(self.psi_smeared)
                 
     def read_json_eigenfunctions(self,function_filepath,energy_filepath,**args):
         self.eigenval=zeros(self.ypoints)
+        self.functions=[]
+        self.energies=[]
+        self.momenta=[]
         if 'sigmax' in args:
             self.sigmax=float(args['sigmax'])
         if 'prob_density' in args:
@@ -180,6 +183,8 @@ class calculate_Mathieu_dos:
                 pass
             else:
                 counter=round((self.ypoints)*(float(edata[i])-min(self.y[:,0]))/self.yrange)-1
+                energies.append(edata[i])
+                functions.append(data[i])
                 if counter>0 and counter<self.ypoints:
                     self.eigenval[counter]+=1
                     for j in range(1,len(data[i])):
@@ -202,13 +207,41 @@ class calculate_Mathieu_dos:
             self.psi=new_psi
             self.psi_smeared=new_psi_smeared
             
-        self.psi_smeared_copy=deepcopy(self.psi)
+        self.psi_smeared=deepcopy(self.psi)
         self.data_type='function'
         
     def normalize(self):
         for i in range(self.ypoints):
             if max(self.psi[i])>0.0:
                 self.psi[i]*=self.eigenval[i]/norm(self.psi[i])
+                
+    def make_supercell(self,num):
+        self.x+=self.xrange/2
+        self.xpoints=round(self.xpoints*num)
+        self.xrange*=num
+        new_psi=zeros((self.ypoints,self.xpoints))
+        new_psi_smeared=zeros((self.ypoints,self.xpoints))
+        newx=zeros((self.ypoints,self.xpoints))
+        newy=zeros((self.ypoints,self.xpoints))
+        for i in range(num):
+            new_psi[:,i*self.xpoints//num:(i+1)*self.xpoints//num]+=self.psi
+            new_psi_smeared[:,i*self.xpoints//num:(i+1)*self.xpoints//num]+=self.psi_smeared
+            newy[:,i*self.xpoints//num:(i+1)*self.xpoints//num]+=self.y
+            newx[:,i*self.xpoints//num:(i+1)*self.xpoints//num]+=self.x+self.xrange/num*(i-num/2)
+        self.psi=new_psi
+        self.psi_smeared=new_psi_smeared
+        self.x=newx
+        self.y=newy
+        
+    def add_scattering_source(self,spoint,smag):
+        self.scattered=zeros((self.ypoints,self.xpoints))
+        #spoint is the horizontal index at which the scattering point sits
+        Eweight=array([1/(1+(self.h**2*i/self.b*self.yrange/(self.ypoints-1)*2/smag**2/self.m*1e20)) for i in range(self.ypoints)])
+        for i in range(self.xpoints):
+            r=abs(i-spoint)*self.xrange/(self.xpoints-1)
+            self.psi[:,i]+=self.psi[:,i]/sqrt(r)*Eweight
+            self.psi_smeared[:,i]+=self.psi_smeared[:,i]/sqrt(r)*Eweight
+            self.scattered[:,i]+=self.psi[:,i]/sqrt(r)*Eweight
         
     def sum_2D(self,filepaths,**args):
         if self.data_type=='energy':
