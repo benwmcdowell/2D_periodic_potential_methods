@@ -9,6 +9,8 @@ from time import time
 from copy import deepcopy
 from scipy.fft import fft,fftfreq
 from scipy.signal.windows import hann
+import os
+from scipy.optimize import curve_fit
 
 class calculate_Mathieu_dos:
     def __init__(self,data_type,xpoints,ypoints,xrange,yrange,**args):
@@ -57,6 +59,11 @@ class calculate_Mathieu_dos:
         else:
             tempx=linspace(-xrange/2,xrange/2,xpoints)
             self.xrange=xrange
+            
+        if 'k' in args:
+            self.k=args['k']
+        else:
+            self.k=self.xrange
             
         for i in range(self.ypoints):
             for j in range(self.xpoints):
@@ -155,11 +162,21 @@ class calculate_Mathieu_dos:
                 except ValueError:
                     pass
                 
-    def read_json_eigenfunctions(self,function_filepath,energy_filepath,**args):
+    def read_json_eigenfunctions(self,filepath,**args):
         self.eigenval=zeros(self.ypoints)
-        self.functions=[]
         self.energies=[]
         self.momenta=[]
+        os.chdir(filepath)
+        if 'derivative' in args and args['derivative']==True:
+            derivative=True
+            file_header='derivatives'
+        else:
+            derivative=False
+            file_header='functions'
+        if 'parity' in args:
+            parity=args['parity']
+        else:
+            parity=['odd','even']
         if 'sigmax' in args:
             self.sigmax=float(args['sigmax'])
         if 'prob_density' in args:
@@ -174,27 +191,30 @@ class calculate_Mathieu_dos:
                 exit()
         else:
             reduced=False
-        with open(function_filepath) as file:
-            data=load(file)
-        with open(energy_filepath) as file:
-            edata=load(file)
-        for i in range(1,len(data)):
-            if type(edata[i])==list:
-                pass
-            else:
-                counter=round((self.ypoints)*(float(edata[i])-min(self.y[:,0]))/self.yrange)-1
-                energies.append(edata[i])
-                functions.append(data[i])
-                if counter>0 and counter<self.ypoints:
-                    self.eigenval[counter]+=1
-                    for j in range(1,len(data[i])):
-                        if type(data[i][j])==list:
-                            pass
-                        else:
-                            if prob_density:
-                                self.psi[counter][j-1]+=float(data[i][j])**2
+        for p in parity:
+            with open('Mathieu_'+file_header+'_'+p+'.json') as file:
+                data=load(file)
+            with open('Mathieu_energies_'+p+'.json') as file:
+                edata=load(file)
+            with open('Mathieu_k_'+p+'.json') as file:
+                kdata=load(file)
+            for i in range(1,len(data)):
+                if type(edata[i])==list:
+                    pass
+                else:
+                    counter=round((self.ypoints)*(float(edata[i])-min(self.y[:,0]))/self.yrange)-1
+                    self.energies.append(edata[i])
+                    self.momenta.append(kdata[i])
+                    if counter>0 and counter<self.ypoints:
+                        self.eigenval[counter]+=1
+                        for j in range(1,len(data[i])):
+                            if type(data[i][j])==list:
+                                pass
                             else:
-                                self.psi[counter][j-1]+=float(data[i][j])
+                                if prob_density:
+                                    self.psi[counter][j-1]+=float(data[i][j])**2
+                                else:
+                                    self.psi[counter][j-1]+=float(data[i][j])
         if reduced:
             self.x=self.x[:,:int(1/periods*self.xpoints)]
             self.x-=self.x[0][0]
@@ -207,6 +227,8 @@ class calculate_Mathieu_dos:
             self.psi=new_psi
             self.psi_smeared=new_psi_smeared
             
+        self.energies=array(self.energies)
+        self.momenta=array(self.momenta)/self.k
         self.psi_smeared=deepcopy(self.psi)
         self.data_type='function'
         
@@ -312,6 +334,27 @@ class calculate_Mathieu_dos:
             self.psi[i]*=exp(-k*1e-10*d)
             self.psi_smeared[i]*=exp(-k*1e-10*d)
             self.psi_smeared_copy[i]*=exp(-k*1e-10*d)
+            
+    def plot_dispersion(self,**args):
+        def parabola_fit(x,a,b):
+            y=a*x**2+b
+            return y
+
+        if 'fit' in args:
+            fit=args['fit']
+        else:
+            fit=True
+            
+        plt.figure()
+        plt.scatter(self.momenta,self.energies)
+        if fit:
+            popt,pcov=curve_fit(parabola_fit,self.momenta,self.energies)
+            plt.plot(self.momenta,parabola_fit(self.momenta,popt[0],popt[1]))
+            print('m* = {}'.format(self.h**2/2*popt[0]/self.m))
+        plt.xlabel('momentum / radians $\AA^{-1}$')
+        plt.ylabel('energy / eV')
+        plt.tight_layout()
+        plt.show()
             
     def plot_fft(self,**args):
         plt.figure()
