@@ -350,7 +350,7 @@ class calculate_Mathieu_dos:
         if fit:
             popt,pcov=curve_fit(parabola_fit,self.momenta,self.energies)
             plt.plot(self.momenta,parabola_fit(self.momenta,popt[0],popt[1]))
-            print('m* = {}'.format(self.h**2/2*popt[0]/self.m))
+            print('m* = {}'.format(self.h**2/2*popt[0]/self.m/self.b*1e20))
         plt.xlabel('momentum / radians $\AA^{-1}$')
         plt.ylabel('energy / eV')
         plt.tight_layout()
