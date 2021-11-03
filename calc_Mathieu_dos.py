@@ -1,5 +1,5 @@
 from math import pi
-from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin,shape,abs,average,cos
+from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin,shape,abs,average,cos,diag
 from numpy.linalg import norm
 from scipy.special import mathieu_a
 import matplotlib.pyplot as plt
@@ -37,10 +37,9 @@ class calculate_Mathieu_dos:
         if 'me' in args:
             self.me=args['me']
         else:
-            self.me=0.4
+            self.me=1.0
         self.m*=self.me
         self.b=1.6022e-19 #J/eV
-        self.k=0.0
         self.sigmax=0.0
         
         if self.data_type!='energy' and self.data_type!='function':
@@ -97,11 +96,12 @@ class calculate_Mathieu_dos:
                     self.eigenval[a][i]+=1.0
         self.data_type='energy'
         
-    def smear_energies(self,**args):
+    def smear_energies(self,sigma,**args):
         if 'normalize' in args:
             normalize=args['normalize']
         else:
             normalize=True
+        self.sigma=sigma
         scale=sqrt(2*pi)*self.sigma
         if self.data_type=='energy':
             percentage_counter=[25,75,100]
@@ -138,11 +138,12 @@ class calculate_Mathieu_dos:
                     except ValueError:
                         pass
         
-    def smear_spatial(self,**args):
+    def smear_spatial(self,sigmax,**args):
         if 'normalize' in args:
             normalize=args['normalize']
         else:
             normalize=True
+        self.sigmax=sigmax
         psi_smeared_copy=deepcopy(self.psi_smeared)
         percentage_counter=[25,50,75]
         x0=int(ceil(5*self.sigmax*self.xpoints/self.xrange))
@@ -183,6 +184,10 @@ class calculate_Mathieu_dos:
             prob_density=args['prob_density']
         else:
             prob_density=True
+        if 'offset' in args:
+            self.eoffset=args['offset']
+        else:
+            self.eoffset=0.0
         if 'reduced_zone' in args:
             reduced=True
             periods=int(args['reduced_zone'])
@@ -202,7 +207,7 @@ class calculate_Mathieu_dos:
                 if type(edata[i])==list:
                     pass
                 else:
-                    counter=round((self.ypoints)*(float(edata[i])-min(self.y[:,0]))/self.yrange)-1
+                    counter=round((self.ypoints)*(float(edata[i])+self.eoffset-min(self.y[:,0]))/self.yrange)-1
                     self.energies.append(edata[i])
                     self.momenta.append(kdata[i])
                     if counter>0 and counter<self.ypoints:
@@ -228,7 +233,7 @@ class calculate_Mathieu_dos:
             self.psi_smeared=new_psi_smeared
             
         self.energies=array(self.energies)
-        self.momenta=array(self.momenta)/self.k
+        self.momenta=array(self.momenta)/self.k*pi
         self.psi_smeared=deepcopy(self.psi)
         self.data_type='function'
         
@@ -335,6 +340,10 @@ class calculate_Mathieu_dos:
             self.psi_smeared[i]*=exp(-k*1e-10*d)
             self.psi_smeared_copy[i]*=exp(-k*1e-10*d)
             
+    def overlay_potential(self,A):
+        plt.plot(self.x[0,:],A*cos(self.x[0,:]*2*pi/self.xrange)+self.eoffset+A,color='white',linestyle='dashed')
+        plt.show()
+            
     def plot_dispersion(self,**args):
         def parabola_fit(x,a,b):
             y=a*x**2+b
@@ -346,14 +355,17 @@ class calculate_Mathieu_dos:
             fit=True
             
         plt.figure()
-        plt.scatter(self.momenta,self.energies)
+        plt.scatter(self.momenta*1e10,self.energies*self.b,label='raw data')
         if fit:
-            popt,pcov=curve_fit(parabola_fit,self.momenta,self.energies)
-            plt.plot(self.momenta,parabola_fit(self.momenta,popt[0],popt[1]))
-            print('m* = {}'.format(self.h**2/2*popt[0]/self.m/self.b*1e20))
+            popt,pcov=curve_fit(parabola_fit,self.momenta*1e10,self.energies*self.b)
+            plt.scatter(self.momenta*1e10,parabola_fit(self.momenta*1e10,popt[0],popt[1]),label='fit')
+            me=self.h**2/2/popt[0]/self.m
+            pcov=sqrt(diag(pcov))
+            print('m* = {} +/- {}'.format(me,pcov[0]/popt[0]*me))
         plt.xlabel('momentum / radians $\AA^{-1}$')
         plt.ylabel('energy / eV')
         plt.tight_layout()
+        plt.legend()
         plt.show()
             
     def plot_fft(self,**args):
@@ -379,8 +391,23 @@ class calculate_Mathieu_dos:
         plt.ylabel('energy / eV')
         plt.tight_layout()
         plt.show()
+        
+    def plot_position_slice(self,pos):
+        plt.figure()
+        for p in pos:
+            i=argmin(abs(self.x[0,:]-p))
+            plt.plot(self.y[:,i],self.psi_smeared[:,i],label=p)
+            plt.xlabel('energy - $E_{F}$ / eV')
+            plt.ylabel('LDOS')
+            plt.legend()
+            plt.show()
     
     def plot_dos(self,n,a,**args):
+        if 'cmap' in args:
+            cmap=args['cmap']
+        else:
+            cmap=plt.rcParams['image.cmap']
+            
         if 'title' in args:
             self.title=str(args['title'])
         else:
@@ -393,7 +420,7 @@ class calculate_Mathieu_dos:
                 else:
                     title=self.title+'\n$\sigma_{energy}$ = '+str(self.sigma)+' eV'
                 plt.title(title)
-                plt.pcolormesh(self.x,self.y,self.dos,cmap='jet',shading='nearest')
+                plt.pcolormesh(self.x,self.y,self.dos,cmap=cmap,shading='nearest')
                 plt.ylabel('relative energy / eV')
                 plt.xlabel('barrier height / eV')
                 cbar=plt.colorbar()
@@ -407,7 +434,7 @@ class calculate_Mathieu_dos:
             else:
                 title=self.title+'\n$\sigma_{energy}$ = 0.0 eV'
             plt.title(title)
-            plt.pcolormesh(self.x,self.y,self.eigenval,cmap='jet',shading='nearest')
+            plt.pcolormesh(self.x,self.y,self.eigenval,cmap=cmap,shading='nearest')
             plt.ylabel('relative energy / eV')
             plt.xlabel('barrier height / eV')
             cbar=plt.colorbar()
@@ -415,7 +442,24 @@ class calculate_Mathieu_dos:
             plt.tight_layout()
             plt.show()
             
-        if self.data_type=='function':     
+        if self.data_type=='function':  
+            plt.figure()
+            if len(self.title)==0:
+                title='Mathieu functions\n$\sigma_{energy}$ = 0.0 eV | $\sigma_{spatial}$ = 0.0 $\AA$'
+            else:
+                title=self.title+'\n$\sigma_{energy}$ = 0.0 eV | $\sigma_{spatial}$ = 0.0 $\AA$'
+            plt.title(title)
+            for i in range(-n,n+1):
+                plt.pcolormesh(self.x+i*a,self.y,self.psi,cmap=cmap,shading='nearest')
+                if i<n:
+                    plt.plot([i*a+a/2 for j in range(2)],[self.y[0][0],self.y[-1][0]],linestyle='dashed',color='white')
+            plt.ylabel('relative energy / eV')
+            plt.xlabel('position / $\AA^{-1}$')
+            cbar=plt.colorbar()
+            cbar.set_label('density of states / states $eV^{-1}$')
+            plt.tight_layout()
+            plt.show()
+        
             if self.sigma!=0.0 or self.sigmax!=0.0:
                 plt.figure()
                 if len(self.title)==0:
@@ -426,7 +470,7 @@ class calculate_Mathieu_dos:
                     title+=' | $\sigma_{spatial}$ = '+str(self.sigmax)+' $\AA$'             
                 plt.title(title)
                 for i in range(-n,n+1):
-                    plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap='jet',shading='nearest')
+                    plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap=cmap,shading='nearest')
                     if i<n:
                         plt.plot([i*a+a/2 for j in range(2)],[self.y[0][0],self.y[-1][0]],linestyle='dashed',color='white')
                 plt.ylabel('relative energy / eV')
@@ -435,22 +479,5 @@ class calculate_Mathieu_dos:
                 cbar.set_label('density of states / states $eV^{-1}$')
                 plt.tight_layout()
                 plt.show()
-            
-            plt.figure()
-            if len(self.title)==0:
-                title='Mathieu functions\n$\sigma_{energy}$ = 0.0 eV | $\sigma_{spatial}$ = 0.0 $\AA$'
-            else:
-                title=self.title+'\n$\sigma_{energy}$ = 0.0 eV | $\sigma_{spatial}$ = 0.0 $\AA$'
-            plt.title(title)
-            for i in range(-n,n+1):
-                plt.pcolormesh(self.x+i*a,self.y,self.psi,cmap='jet',shading='nearest')
-                if i<n:
-                    plt.plot([i*a+a/2 for j in range(2)],[self.y[0][0],self.y[-1][0]],linestyle='dashed',color='white')
-            plt.ylabel('relative energy / eV')
-            plt.xlabel('position / $\AA^{-1}$')
-            cbar=plt.colorbar()
-            cbar.set_label('density of states / states $eV^{-1}$')
-            plt.tight_layout()
-            plt.show()
-        
+                
         print('total elapsed time: {} s'.format(time()-self.start))
