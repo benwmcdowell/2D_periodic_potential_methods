@@ -353,6 +353,13 @@ class calculate_Mathieu_dos:
         else:
             fit=True
             
+        if 'overlay' in args:
+            overlay_fit=True
+            m=args['overlay'][0]
+            m_err=args['overlay'][1]
+        else:
+            overlay_fit=False
+            
         plt.figure()
         plt.scatter(self.momenta*1e10,self.energies*self.b,label='raw data')
         if fit:
@@ -361,8 +368,12 @@ class calculate_Mathieu_dos:
             me=self.h**2/2/popt[0]/self.m
             pcov=sqrt(diag(pcov))
             print('m* = {} +/- {}'.format(me,pcov[0]/popt[0]*me))
-        plt.xlabel('momentum / radians $\AA^{-1}$')
-        plt.ylabel('energy / eV')
+        if overlay_fit:
+            A=self.h**2/2/m/self.m
+            A_err=m_err/m*A
+            plt.errorbar(self.momenta*1e10,parabola_fit(self.momenta*1e10,A,0.0),yerr=(self.momenta*1e10)**2*A_err,fmt='o',label='fit')
+        plt.xlabel('momentum / radians $m^{-1}$')
+        plt.ylabel('energy / J')
         plt.tight_layout()
         plt.legend()
         plt.show()
