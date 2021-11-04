@@ -338,7 +338,6 @@ class calculate_Mathieu_dos:
             k=tunneling_factor(abs(self.y[i][0]),abs(self.y[i][0]),phi)
             self.psi[i]*=exp(-k*1e-10*d)
             self.psi_smeared[i]*=exp(-k*1e-10*d)
-            self.psi_smeared_copy[i]*=exp(-k*1e-10*d)
             
     def overlay_potential(self,A):
         plt.plot(self.x[0,:],A*cos(self.x[0,:]*2*pi/self.xrange)+self.eoffset+A,color='white',linestyle='dashed')
