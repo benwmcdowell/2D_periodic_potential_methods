@@ -369,19 +369,19 @@ class calculate_Mathieu_dos:
             overlay_fit=False
             
         plt.figure()
-        plt.scatter(self.momenta[erange[0]:erange[1]]*1e10,self.energies[erange[0]:erange[1]]*self.b,label='raw data')
+        plt.scatter(self.momenta[erange[0]:erange[1]],self.energies[erange[0]:erange[1]],label='raw data')
         if fit:
             popt,pcov=curve_fit(parabola_fit,self.momenta[erange[0]:erange[1]]*1e10,self.energies[erange[0]:erange[1]]*self.b)
-            plt.scatter(self.momenta[erange[0]:erange[1]]*1e10,parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,popt[0],popt[1]),label='fit')
+            plt.scatter(self.momenta[erange[0]:erange[1]],parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,popt[0],popt[1])/self.b,label='fit')
             me=self.h**2/2/popt[0]/self.m
             pcov=sqrt(diag(pcov))
             print('m* = {} +/- {}'.format(me,pcov[0]/popt[0]*me))
         if overlay_fit:
             A=self.h**2/2/m/self.m
             A_err=m_err/m*A
-            plt.errorbar(self.momenta[erange[0]:erange[1]]*1e10,parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,A,0.0),yerr=(self.momenta[erange[0]:erange[1]]*1e10)**2*A_err,fmt='o',label='fit')
-        plt.xlabel('momentum / radians $m^{-1}$')
-        plt.ylabel('energy / J')
+            plt.errorbar(self.momenta[erange[0]:erange[1]],parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,A,0.0)/self.b,yerr=(self.momenta[erange[0]:erange[1]])**2*A_err,fmt='o',label='fit')
+        plt.xlabel('momentum / radians $\AA^{-1}$')
+        plt.ylabel('energy / eV')
         plt.tight_layout()
         plt.legend()
         plt.show()
