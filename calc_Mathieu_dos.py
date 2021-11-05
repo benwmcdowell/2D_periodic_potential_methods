@@ -234,6 +234,8 @@ class calculate_Mathieu_dos:
             
         self.energies=array(self.energies)
         self.momenta=array(self.momenta)/self.k*pi
+        self.momenta=self.momenta[self.energies.argsort()]
+        self.energies=self.energies[self.energies.argsort()]
         self.psi_smeared=deepcopy(self.psi)
         self.data_type='function'
         
@@ -353,6 +355,12 @@ class calculate_Mathieu_dos:
         else:
             fit=True
             
+        if 'erange' in args:
+            erange=args['erange']
+        else:
+            erange=(min(self.energies),max(self.energies))
+        erange=tuple([argmin(abs(self.energies-erange[i])) for i in range(2)])
+            
         if 'overlay' in args:
             overlay_fit=True
             m=args['overlay'][0]
@@ -361,17 +369,17 @@ class calculate_Mathieu_dos:
             overlay_fit=False
             
         plt.figure()
-        plt.scatter(self.momenta*1e10,self.energies*self.b,label='raw data')
+        plt.scatter(self.momenta[erange[0]:erange[1]]*1e10,self.energies[erange[0]:erange[1]]*self.b,label='raw data')
         if fit:
-            popt,pcov=curve_fit(parabola_fit,self.momenta*1e10,self.energies*self.b)
-            plt.scatter(self.momenta*1e10,parabola_fit(self.momenta*1e10,popt[0],popt[1]),label='fit')
+            popt,pcov=curve_fit(parabola_fit,self.momenta[erange[0]:erange[1]]*1e10,self.energies[erange[0]:erange[1]]*self.b)
+            plt.scatter(self.momenta[erange[0]:erange[1]]*1e10,parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,popt[0],popt[1]),label='fit')
             me=self.h**2/2/popt[0]/self.m
             pcov=sqrt(diag(pcov))
             print('m* = {} +/- {}'.format(me,pcov[0]/popt[0]*me))
         if overlay_fit:
             A=self.h**2/2/m/self.m
             A_err=m_err/m*A
-            plt.errorbar(self.momenta*1e10,parabola_fit(self.momenta*1e10,A,0.0),yerr=(self.momenta*1e10)**2*A_err,fmt='o',label='fit')
+            plt.errorbar(self.momenta[erange[0]:erange[1]]*1e10,parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,A,0.0),yerr=(self.momenta[erange[0]:erange[1]]*1e10)**2*A_err,fmt='o',label='fit')
         plt.xlabel('momentum / radians $m^{-1}$')
         plt.ylabel('energy / J')
         plt.tight_layout()
