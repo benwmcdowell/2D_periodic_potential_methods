@@ -207,7 +207,7 @@ class calculate_Mathieu_dos:
                 if type(edata[i])==list:
                     pass
                 else:
-                    counter=round((self.ypoints)*(float(edata[i])+self.eoffset-min(self.y[:,0]))/self.yrange)-1
+                    counter=round((self.ypoints-1)*(float(edata[i])+self.eoffset-min(self.y[:,0]))/self.yrange)
                     self.energies.append(edata[i])
                     self.momenta.append(kdata[i])
                     if counter>0 and counter<self.ypoints:
@@ -421,6 +421,11 @@ class calculate_Mathieu_dos:
             plt.show()
     
     def plot_dos(self,n,a,**args):
+        if 'overlay_potential' in args:
+            overlay_potential=True
+            potential=args['overlay_potential']
+        else:
+            overlay_potential=False
         if 'cmap' in args:
             cmap=args['cmap']
         else:
@@ -469,10 +474,12 @@ class calculate_Mathieu_dos:
             plt.title(title)
             for i in range(-n,n+1):
                 plt.pcolormesh(self.x+i*a,self.y,self.psi,cmap=cmap,shading='nearest')
+                if overlay_potential:
+                    plt.plot(self.x[0,:]+i*a,potential*cos(self.x[0,:]*2*pi/self.xrange)+self.eoffset+potential,color='white',linestyle='dashed')
                 if i<n:
                     plt.plot([i*a+a/2 for j in range(2)],[self.y[0][0],self.y[-1][0]],linestyle='dashed',color='white')
             plt.ylabel('relative energy / eV')
-            plt.xlabel('position / $\AA^{-1}$')
+            plt.xlabel('position / $\AA$')
             cbar=plt.colorbar()
             cbar.set_label('density of states / states $eV^{-1}$')
             plt.tight_layout()
@@ -489,10 +496,12 @@ class calculate_Mathieu_dos:
                 plt.title(title)
                 for i in range(-n,n+1):
                     plt.pcolormesh(self.x+i*a,self.y,self.psi_smeared,cmap=cmap,shading='nearest')
+                    if overlay_potential:
+                        plt.plot(self.x[0,:]+i*a,potential*cos(self.x[0,:]*2*pi/self.xrange)+self.eoffset+potential,color='white',linestyle='dashed')
                     if i<n:
                         plt.plot([i*a+a/2 for j in range(2)],[self.y[0][0],self.y[-1][0]],linestyle='dashed',color='white')
                 plt.ylabel('relative energy / eV')
-                plt.xlabel('position / $\AA^{-1}$')
+                plt.xlabel('position / $\AA$')
                 cbar=plt.colorbar()
                 cbar.set_label('density of states / states $eV^{-1}$')
                 plt.tight_layout()
