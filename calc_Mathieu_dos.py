@@ -372,7 +372,7 @@ class calculate_Mathieu_dos:
         plt.scatter(self.momenta[erange[0]:erange[1]],self.energies[erange[0]:erange[1]],label='raw data')
         if fit:
             popt,pcov=curve_fit(parabola_fit,self.momenta[erange[0]:erange[1]]*1e10,self.energies[erange[0]:erange[1]]*self.b)
-            plt.scatter(self.momenta[erange[0]:erange[1]],parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,popt[0],popt[1])/self.b,label='fit')
+            plt.plot(self.momenta[erange[0]:erange[1]],parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,popt[0],popt[1])/self.b,label='fit')
             me=self.h**2/2/popt[0]/self.m
             pcov=sqrt(diag(pcov))
             print('m* = {} +/- {}'.format(me,pcov[0]/popt[0]*me))
