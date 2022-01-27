@@ -21,6 +21,7 @@ class moire():
     def calculate(self,nprocs,apts,lpts,slv,alv,elv):
         self.alv=alv
         self.slv=slv
+        self.elv=elv
         self.apts=apts
         self.lpts=lpts
         self.nprocs=nprocs
@@ -72,7 +73,7 @@ if __name__ == '__main__':
         if i in ['-a','--adlayer']:
             alv=np.array([float(k) for k in j.split(',')]).reshape((2,2))
         if i in ['-e','--exp']:
-            elv=np.array([float(k) for k in j.split(',')]).reshape((len(j.split(',')),2))
+            elv=np.array([float(k) for k in j.split(',')]).reshape((len(j.split(','))//2,2))
         if i in ['-n','--npts']:
             apts,lpts=j.split(',')
             apts=int(apts)
