@@ -71,10 +71,11 @@ class moire():
     
     def plot_moire(self):
         self.angle*=180/np.pi
-        self.fig,self.ax=plt.subplots(1,1)
-        self.ax.plot(self.angle,self.mindiff)
-        self.ax.set(ylabel='minimum difference / nm')
-        self.ax.set(xlabel='misorientation angle / degrees')
+        self.fig,self.axs=plt.subplots(2,1,sharex=True)
+        for i in range(2):
+            self.axs[i].plot(self.angle,self.mindiff[i])
+        self.axs[-1].set(ylabel='minimum difference / nm')
+        self.axs.set(xlabel='misorientation angle / degrees')
         self.fig.show()
     
 if __name__ == '__main__':
