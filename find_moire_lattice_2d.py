@@ -12,7 +12,7 @@ class moire():
     
     def write_file(self,ofile):
         with open(ofile,'w') as f:
-            f.write(json.dump(self.mindiff))
+            f.write(json.dumps(self.mindiff))
             
     def read_file(self,ifile):
         with open(ifile,'r') as f:
@@ -35,17 +35,17 @@ class moire():
         import numpy as np
         lrange=[int(i) for i in range(-self.lpts,self.lpts+1)]
         lrange.remove(0)
-        tempdiff=np.zeros(np.shape(self.elv)[0],self.apts)
-        tempdiff[angle,e]+=np.inf
+        tempdiff=np.zeros((np.shape(self.elv)[0],self.apts))
+        tempdiff[e,a]+=np.inf
         rot=np.array([[np.cos(self.angle[a]),np.sin(self.angle[a])],[-np.sin(self.angle[a]),np.cos(self.angle[a])]])
         for i in lrange:
             for j in lrange:
                 for k in lrange:
                     for l in lrange:
-                        pos=self.slv[0]*i+self.slv[1]*j+np.linalg.dot(self.alv[0]*k,rot)+np.linalg.dot(self.alv[1]*l,rot)
+                        pos=self.slv[0]*i+self.slv[1]*j+np.dot(self.alv[0]*k,rot)+np.dot(self.alv[1]*l,rot)
                         pos=pos%self.elv[e]
-                        if np.linalg.norm(pos)<tempdiff:
-                            tempdiff=np.linalg.norm(pos)
+                        if np.linalg.norm(pos)<tempdiff[e,a]:
+                            tempdiff[e,a]=np.linalg.norm(pos)
         return tempdiff
     
     def plot_moire(self):
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     nprocs=1
     output='./moire_output'
     try:
-        opts,args=getopt.getopt(sys.argv[1:],'p:s:a:n:e:',['processors=','substrate=','adlayer=','npts=','exp='])
+        opts,args=getopt.getopt(sys.argv[1:],'p:s:a:n:e:o:',['processors=','substrate=','adlayer=','npts=','exp=','-output'])
     except getopt.GetoptError:
         print('error in command line syntax')
         sys.exit(2)
@@ -78,6 +78,8 @@ if __name__ == '__main__':
             apts,lpts=j.split(',')
             apts=int(apts)
             lpts=int(lpts)
+        if i in ['-o','--output']:
+            output=j
     main=moire()
     main.calculate(nprocs,apts,lpts,slv,alv,elv)
     main.write_file(output)
