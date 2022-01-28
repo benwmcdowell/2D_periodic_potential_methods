@@ -11,14 +11,20 @@ class moire():
         pass
     
     def write_file(self,ofile):
-        with open(ofile,'w') as f:
-            f.write(json.dumps(self.mindiff))
+        with open(ofile,'w+') as f:
+            f.write(json.dumps([list(i) for i in self.mindiff]))
             
     def read_file(self,ifile):
         with open(ifile,'r') as f:
             self.mindiff=json.load(f)
+        self.apts=np.shape(self.mindiff)[1]
+        self.angle=np.array([i*np.pi*2/(self.apts-1) for i in range(self.apts)])
             
     def calculate(self,nprocs,apts,lpts,slv,alv,elv):
+        if 'max_length' in args:
+            self.max_length=args['max_length']
+        else:
+            self.max_length=np.inf
         self.alv=alv
         self.slv=slv
         self.elv=elv
@@ -43,17 +49,20 @@ class moire():
                 for k in lrange:
                     for l in lrange:
                         pos=self.slv[0]*i+self.slv[1]*j+np.dot(self.alv[0]*k,rot)+np.dot(self.alv[1]*l,rot)
-                        pos=pos%self.elv[e]
-                        if np.linalg.norm(pos)<tempdiff[e,a]:
-                            tempdiff[e,a]=np.linalg.norm(pos)
+                        if pos<self.max_length:
+                            pos=pos%self.elv[e]
+                            if np.linalg.norm(pos)<tempdiff[e,a]:
+                                tempdiff[e,a]=np.linalg.norm(pos)
         return tempdiff
     
     def plot_moire(self):
         self.angle*=180/np.pi
-        self.fig,self.ax=plt.subplots(np.shape(self.elv)[0],1)
-        for i in range(np.shape(self.elv)[0]):
-            self.ax.plot(self.angle,self.mindiff[i])
-        self.set(xlabel='misorientation angle / degrees',ylabel='minimum distance / $\AA$')
+        self.fig,self.axs=plt.subplots(np.shape(self.mindiff)[0]+1,1,sharex=True)
+        for i in range(np.shape(self.mindiff)[0]):
+            self.axs[i].plot(self.angle,self.mindiff[i])
+            self.axs[i].set(ylabel='minimum difference / $\AA$')
+        self.axs[-1].plot(self.angle,sum(np.array([self.mindiff[i] for i in range(np.shape(self.mindiff)[0])])))
+        self.axs[-1].set(xlabel='misorientation angle / degrees')
         self.fig.show()
     
 if __name__ == '__main__':
@@ -80,6 +89,9 @@ if __name__ == '__main__':
             lpts=int(lpts)
         if i in ['-o','--output']:
             output=j
-    main=moire()
-    main.calculate(nprocs,apts,lpts,slv,alv,elv)
-    main.write_file(output)
+    try:
+        main=moire()
+        main.calculate(nprocs,apts,lpts,slv,alv,elv)
+        main.write_file(output)
+    except NameError:
+        print('Error: lattice vectors not defined')
