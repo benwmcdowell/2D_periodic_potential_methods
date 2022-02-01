@@ -17,7 +17,7 @@ class moire():
     def read_file(self,ifile):
         with open(ifile,'r') as f:
             self.mindiff=json.load(f)
-        self.apts=np.shape(self.mindiff)[0]
+        self.apts=np.shape(self.mindiff)[1]
         self.angle=np.array([i*np.pi*2/(self.apts-1) for i in range(self.apts)])
             
     def calculate(self,nprocs,apts,lpts,slv,alv,elv,**args):
@@ -74,8 +74,8 @@ class moire():
         self.fig,self.axs=plt.subplots(2,1,sharex=True)
         for i in range(2):
             self.axs[i].plot(self.angle,self.mindiff[i])
-        self.axs[-1].set(ylabel='minimum difference / nm')
-        self.axs.set(xlabel='misorientation angle / degrees')
+            self.axs[i].set(ylabel='lattice mismatch / nm')
+        self.axs[-1].set(xlabel='misorientation angle / degrees')
         self.fig.show()
     
 if __name__ == '__main__':
