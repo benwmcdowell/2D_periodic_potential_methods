@@ -415,10 +415,10 @@ class calculate_Mathieu_dos:
         for p in pos:
             i=argmin(abs(self.x[0,:]-p))
             plt.plot(self.y[:,i],self.psi_smeared[:,i],label=p)
-            plt.xlabel('energy - $E_{F}$ / eV')
-            plt.ylabel('LDOS')
-            plt.legend()
-            plt.show()
+        plt.xlabel('energy - $E_{F}$ / eV')
+        plt.ylabel('LDOS')
+        plt.legend()
+        plt.show()
     
     def plot_dos(self,n,a,**args):
         if 'overlay_potential' in args:
