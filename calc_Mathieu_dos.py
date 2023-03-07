@@ -344,12 +344,21 @@ class calculate_Mathieu_dos:
     def overlay_potential(self,A):
         plt.plot(self.x[0,:],A*cos(self.x[0,:]*2*pi/self.xrange)+self.eoffset+A,color='white',linestyle='dashed')
         plt.show()
+        
+    def find_bandgap(self):
+        max_diff=0
+        for i in range(len(self.energies)-1):
+            if self.energies[i+1]-self.energies[i]>max_diff:
+                max_diff=self.energies[i+1]-self.energies[i]
+                oband=self.energies[i]
+        print('band gap: {} eV'.format(max_diff))
+        print('highest occupied band: {} eV below Fermi level'.format(oband))
             
-    def plot_dispersion(self,**args):
+    def plot_dispersion(self,relative_energies=False,**args):
         def parabola_fit(x,a,b):
             y=a*x**2+b
             return y
-
+        
         if 'fit' in args:
             fit=args['fit']
         else:
@@ -360,6 +369,20 @@ class calculate_Mathieu_dos:
         else:
             erange=(min(self.energies),max(self.energies))
         erange=tuple([argmin(abs(self.energies-erange[i])) for i in range(2)])
+        
+        if relative_energies:
+            self.energies-=min(self.energies)
+        
+        efit=[]
+        kfit=[]
+        counter=erange[0]
+        while len(efit)<3:
+            if self.momenta[counter] not in kfit or self.energies[counter] not in efit:
+                efit.append(self.energies[counter])
+                kfit.append(self.momenta[counter])
+            counter+=1
+        efit=array(efit)
+        kfit=array(kfit)
             
         if 'overlay' in args:
             overlay_fit=True
@@ -371,7 +394,9 @@ class calculate_Mathieu_dos:
         plt.figure()
         plt.scatter(self.momenta[erange[0]:erange[1]],self.energies[erange[0]:erange[1]],label='raw data')
         if fit:
-            popt,pcov=curve_fit(parabola_fit,self.momenta[erange[0]:erange[1]]*1e10,self.energies[erange[0]:erange[1]]*self.b)
+            p0=((max(efit)-min(efit))/(max(kfit**2)-min(kfit**2)),-(max(efit)-min(efit))/(max(kfit**2)-min(kfit**2))*kfit[0]**2+efit[0])
+            bounds=((0,-100),(100,100))
+            popt,pcov=curve_fit(parabola_fit,kfit*1e10,efit*self.b,p0=p0)
             plt.plot(self.momenta[erange[0]:erange[1]],parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,popt[0],popt[1])/self.b,label='fit')
             me=self.h**2/2/popt[0]/self.m
             pcov=sqrt(diag(pcov))
@@ -379,7 +404,7 @@ class calculate_Mathieu_dos:
         if overlay_fit:
             A=self.h**2/2/m/self.m
             A_err=m_err/m*A
-            plt.errorbar(self.momenta[erange[0]:erange[1]],parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,A,0.0)/self.b,yerr=(self.momenta[erange[0]:erange[1]])**2*A_err,fmt='o',label='fit')
+            plt.errorbar(self.momenta[erange[0]:erange[1]],parabola_fit(self.momenta[erange[0]:erange[1]]*1e10,A,0.0)/self.b+0.3,yerr=(self.momenta[erange[0]:erange[1]])**2*A_err,fmt='o',label='fit')
         plt.xlabel('momentum / radians $\AA^{-1}$')
         plt.ylabel('energy / eV')
         plt.tight_layout()
