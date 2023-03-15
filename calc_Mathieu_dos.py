@@ -1,4 +1,5 @@
 from math import pi
+import numpy as np
 from numpy import linspace,zeros,array,sqrt,exp,ceil,argmin,shape,abs,average,cos,diag
 from numpy.linalg import norm
 from scipy.special import mathieu_a
@@ -327,20 +328,28 @@ class calculate_Mathieu_dos:
                 smeared_dos+=gauss
             self.dos[:,j]+=smeared_dos
             
-    def overlay_tunneling_probability(self,d,phi):
+    def overlay_tunneling_probability(self,d,phi,normalize=True):
         def tunneling_factor(V,E,phi):
             V*=1.60218e-19
             E*=1.60218e-19
             phi*=1.60218e-19
             prefactor=8/3/V*pi*sqrt(2*9.11e-31)/6.626e-34
             barrier=(phi-E+V)**(3/2)-(phi-E)**(3/2)
+            
             return prefactor*barrier
         
         for i in range(self.ypoints):
             k=tunneling_factor(abs(self.y[i][0]),abs(self.y[i][0]),phi)
-            self.psi[i]*=exp(-k*1e-10*d)
-            self.psi_smeared[i]*=exp(-k*1e-10*d)
+            if np.isnan(k):
+                self.psi[i]*=0.0
+                self.psi_smeared[i]*=0.0
+            else:
+                self.psi[i]*=exp(-k*1e-10*d)
+                self.psi_smeared[i]*=exp(-k*1e-10*d)
             
+        self.psi/=np.max(self.psi)
+        self.psi_smeared/=np.max(self.psi_smeared)
+
     def overlay_potential(self,A):
         plt.plot(self.x[0,:],A*cos(self.x[0,:]*2*pi/self.xrange)+self.eoffset+A,color='white',linestyle='dashed')
         plt.show()
