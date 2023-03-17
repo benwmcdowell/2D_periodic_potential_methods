@@ -340,12 +340,12 @@ class calculate_Mathieu_dos:
         
         for i in range(self.ypoints):
             k=tunneling_factor(abs(self.y[i][0]),abs(self.y[i][0]),phi)
-            if np.isnan(k):
-                self.psi[i]*=0.0
-                self.psi_smeared[i]*=0.0
-            else:
-                self.psi[i]*=exp(-k*1e-10*d)
-                self.psi_smeared[i]*=exp(-k*1e-10*d)
+            counter=0
+            while np.isnan(k):
+                k=tunneling_factor(abs(self.y[i+counter][0]),abs(self.y[i+counter][0]),phi)
+                counter+=1
+            self.psi[i]*=exp(-k*1e-10*d)
+            self.psi_smeared[i]*=exp(-k*1e-10*d)
             
         self.psi/=np.max(self.psi)
         self.psi_smeared/=np.max(self.psi_smeared)
