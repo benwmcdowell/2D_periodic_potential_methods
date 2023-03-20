@@ -273,42 +273,28 @@ class calculate_Mathieu_dos:
             self.psi_smeared[:,i]+=self.psi_smeared[:,i]/sqrt(r)*Eweight
             self.scattered[:,i]+=self.psi[:,i]/sqrt(r)*Eweight
         
-    def sum_2D(self,filepaths,**args):
-        if self.data_type=='energy':
-            if 'k' not in args:
-                print('supply the spatial frequencies (in units of per m) as a list: ie k=[k1,k2]')
-                exit()
-            k=args['k']
-            for i in range(len(filepaths)):
-                tempvar=calculate_Mathieu_dos(self.data_type,self.xpoints,self.ypoints,[self.x[0][0],self.x[0][-1]],[self.y[0][0],self.y[-1][0]],me=self.me,sigma=self.sigma)
-                tempvar.read_json_eigenenergies(k[i],filepaths[i])
-                self.eigenval+=tempvar.eigenval
-                self.dos+=tempvar.dos
-        if self.data_type=='function':
-            if 'reduced_zone' in args:
-                reduced=True
-                periods=int(args['reduced_zone'])
-                self.x=self.x[:,:int(1/periods*self.xpoints)]
-                self.x-=self.x[0][0]
-                self.y=self.y[:,:int(1/periods*self.ypoints)]
-                new_psi=zeros((self.ypoints,int(self.xpoints/periods)))
-                new_psi_smeared=zeros((self.ypoints,int(self.xpoints/periods)))
-                for i in range(periods):
-                    new_psi+=self.psi[:,int(i/periods*self.xpoints):int((i+1)/periods*self.xpoints)]
-                    new_psi_smeared+=self.psi[:,int(i/periods*self.xpoints):int((i+1)/periods*self.xpoints)]
-                self.psi=new_psi
-                self.psi_smeared=new_psi_smeared
-            else:
-                reduced=False
-            for i in range(len(filepaths)):
-                tempvar=calculate_Mathieu_dos(self.data_type,self.xpoints,self.ypoints,[self.x[0][0],self.x[0][-1]],[self.y[0][0],self.y[-1][0]],me=self.me,sigma=self.sigma)
-                if reduced:
-                    tempvar.read_json_eigenfunctions(filepaths[i],reduced_zone=periods)
-                else:
-                    tempvar.read_json_eigenfunctions(filepaths[i])
-                self.psi+=tempvar.psi
-                self.psi_smeared+=tempvar.psi_smeared
+    def sum_2d(self,fp,x2npts=0,y2npts=0,k2=157.86353/2,y2range=0,de=0.05):
+        if x2npts==0:
+            x2npts=self.xpoints
+        if y2npts==0:
+            y2npts=self.ypoints
+        if y2range==0:
+            y2range=self.yrange
         
+        def calc_weighting(e1,e2,esum,de):
+            return np.exp(-(e1+e2-esum)**2/de**2)
+        psi_2d=np.zeros((self.ypoints,self.xpoints,x2npts))
+        
+        other_psi=calculate_Mathieu_dos('function',x2npts,y2npts,k2,y2range)
+        other_psi.read_json_eigenfunctions(fp)
+        for i in range(self.ypoints):
+            weighting=np.array([calc_weighting(self.y[j,0],other_psi.y[:,0],self.y[i,0],de) for j in range(self.ypoints)])
+            for j in range(y2npts):
+                for k in range(x2npts):
+                    psi_2d[i,:,k]+=weighting[i,j]*self.psi[i,:]*other_psi.psi[j,k]
+                    
+        return psi_2d
+            
     def calculate_dos(self,k,nstates):
         self.nstates=nstates
         for n in range(1,self.nstates):
