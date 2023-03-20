@@ -285,15 +285,25 @@ class calculate_Mathieu_dos:
             return np.exp(-(e1+e2-esum)**2/de**2)
         psi_2d=np.zeros((self.ypoints,self.xpoints,x2npts))
         
-        other_psi=calculate_Mathieu_dos('function',x2npts,y2npts,k2,y2range)
-        other_psi.read_json_eigenfunctions(fp)
+        self.other_psi=calculate_Mathieu_dos('function',x2npts,y2npts,k2,y2range)
+        self.other_psi.read_json_eigenfunctions(fp)
         for i in range(self.ypoints):
-            weighting=np.array([calc_weighting(self.y[j,0],other_psi.y[:,0],self.y[i,0],de) for j in range(self.ypoints)])
+            weighting=np.array([calc_weighting(self.y[j,0],self.other_psi.y[:,0],self.y[i,0],de) for j in range(self.ypoints)])
             for j in range(y2npts):
                 for k in range(x2npts):
-                    psi_2d[i,:,k]+=weighting[i,j]*self.psi[i,:]*other_psi.psi[j,k]
+                    psi_2d[i,:,k]+=weighting[i,j]*self.psi[i,:]*self.other_psi.psi[j,k]
                     
+        self.psi_2d=psi_2d
         return psi_2d
+    
+    def plot_sum_2d(self,pos,axis=0,cmap='vivid'):
+        fig_2dsum,ax_2dsum=plt.subplots(1,1,tight_layout=True)
+        if axis==0:
+            ax_2dsum.pcolormesh(self.x,self.y,self.psi_2d[:,:,pos],shading='nearest',cmap=cmap)
+        elif axis==1:
+            ax_2dsum.pcolormesh(self.other_psi.x,self.y,self.psi_2d[:,pos,:],shading='nearest',cmap=cmap)
+        ax_2dsum.set(xlabel='position / $\AA$', ylabel='energy / eV')
+        fig_2dsum.show()
             
     def calculate_dos(self,k,nstates):
         self.nstates=nstates
