@@ -244,7 +244,7 @@ class calculate_Mathieu_dos:
     def normalize(self):
         for i in range(self.ypoints):
             if max(self.psi[i])>0.0:
-                self.psi[i]*=self.eigenval[i]/norm(self.psi[i])
+                self.psi[i,:]*=self.eigenval[i]/norm(self.psi[i,:])
                 
     def make_supercell(self,num):
         self.x+=self.xrange/2
@@ -274,7 +274,7 @@ class calculate_Mathieu_dos:
             self.psi_smeared[:,i]+=self.psi_smeared[:,i]/sqrt(r)*Eweight
             self.scattered[:,i]+=self.psi[:,i]/sqrt(r)*Eweight
         
-    def sum_2d(self,fp,x2npts=0,y2npts=0,k2=157.86353/2,y2range=0,de=0.05,tol=0,offset=0.0):
+    def sum_2d(self,fp,x2npts=0,y2npts=0,k2=157.86353/2,y2range=0,de=0.05,tol=0,offset=0.0,normalize_weights=True,normalize_pos=True):
         if x2npts==0:
             x2npts=self.xpoints
         if y2npts==0:
@@ -290,57 +290,49 @@ class calculate_Mathieu_dos:
         
         self.other_psi=calculate_Mathieu_dos('function',x2npts,y2npts,k2,y2range)
         self.other_psi.read_json_eigenfunctions(fp)
-        zero_pos=[np.argmin(abs(0,j[:,0])) for j in [self.x,self.other_psi.x]]
         
         #test data
         #self.psi=np.zeros(np.shape(self.psi))
         #for i in range(self.ypoints):
-        #    self.psi[i,:]+=np.array([j for j in range(250)])
+        #    self.psi[i,:]+=np.array([j for j in range(self.xpoints)])
         #self.other_psi.psi=np.zeros(np.shape(self.other_psi.psi))
         #for i in range(y2npts):
         #    self.other_psi.psi[i,:]+=np.array([j for j in range(x2npts)])
         
-        self.psi/=np.max(self.psi)
-        self.other_psi.psi/=np.max(self.other_psi.psi)
+        if normalize_weights:
+            self.psi/=np.max(self.psi)
+            self.other_psi.psi/=np.max(self.other_psi.psi)
         
-            #weighting=np.array([calc_weighting(self.y[j,0],self.other_psi.y[:,0],self.y[i,0],de) for j in range(self.ypoints)])
         for j in range(self.ypoints):
             for k in range(y2npts):
                 i=np.argmin(abs(self.y[:,0]-self.y[j,0]-self.other_psi.y[k,0]))
-                tempx=self.psi[j,:]
-                tempy=self.other_psi.psi[k,:]
-                tempx,tempy=np.meshgrid(self.psi[j,:],self.other_psi.psi[k,:])
-                psi_2d[i,:,:]+=tempx*tempy
+                if abs(self.y[i,0]-self.y[j,0]-self.other_psi.y[k,0])<tol:
+                    tempx,tempy=np.meshgrid(self.psi[j,:],self.other_psi.psi[k,:])
+                    psi_2d[i,:,:]+=(tempx*tempy).T
                 
-                #psi_2d[i,:,:]+=weighting[j,k]*tempx*tempy
 
                 
-        for i in range(self.ypoints):
-            for k in range(x2npts):
-                #psi_2d[i,:,k]+=self.psi[j,:]*weighting[j,zero_pos[0]]
-                psi_2d[i,:,k]+=self.psi[i,:]
+        #for i in range(self.ypoints):
+            #for k in range(x2npts):
+                #psi_2d[i,:,k]+=self.psi[i,:]
                 
-            j=np.argmin(abs(self.y[i,0]-self.other_psi.y[:,0]))
-            for k in range(self.xpoints):
-                psi_2d[i,k,:]+=self.other_psi.psi[j,:]
-                #psi_2d[i,k,:]+=weighting[zero_pos[1],j]*self.other_psi.psi[j,:]
-            #for j in range(y2npts):
-            #    for k in range(x2npts):
-            #        for l in range(self.ypoints):
-            #            psi_2d[i,:,k]+=weighting[l,j]*self.psi[l,:]*self.other_psi.psi[j,k]
-            #    for k in range(self.xpoints):
-            #        psi_2d[i,k,:]+=weighting[zero_pos[1],j]*self.other_psi.psi[j,:]
-            #for j in range(self.ypoints):
-            #    for k in range(x2npts):
-            #        psi_2d[i,:,k]+=self.psi[j,:]*weighting[j,zero_pos[0]]
+            #j=np.argmin(abs(self.y[i,0]-self.other_psi.y[:,0]))
+            #for k in range(self.xpoints):
+            #    psi_2d[i,k,:]+=self.other_psi.psi[j,:]
                     
         self.psi_2d=psi_2d
         
-        #gaussian smearing
-        de/=(self.y[1,0]-self.y[0,0])
-        for i in range(self.xpoints):
-            for j in range(x2npts):
-                self.psi_2d[:,i,j]=gaussian_filter(self.psi_2d[:,i,j],de,mode='nearest')
+        if normalize_pos:
+            for i in range(self.xpoints):
+                for j in range(x2npts):
+                    self.psi_2d[:,i,j]/=sum(self.psi_2d[:,i,j])
+        
+        if de!=0:
+            #gaussian smearing
+            de/=(self.y[1,0]-self.y[0,0])
+            for i in range(self.xpoints):
+                for j in range(x2npts):
+                    self.psi_2d[:,i,j]=gaussian_filter(self.psi_2d[:,i,j],de,mode='nearest')
                 
         self.y+=offset
     
