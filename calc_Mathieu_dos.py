@@ -344,6 +344,21 @@ class calculate_Mathieu_dos:
             ax_2dsum.pcolormesh(self.other_psi.x,self.y,self.psi_2d[:,pos,:]/np.max(self.psi_2d[:,pos,:]),shading='nearest',cmap=cmap)
         ax_2dsum.set(xlabel='position / $\AA$', ylabel='energy / eV')
         fig_2dsum.show()
+        
+    def plot_slice_sum_2d(self,pos,pos2,axis=0):
+        fig_sumslice,ax_sumslice=plt.subplots(1,1,tight_layout=True)
+        if type(pos)!=list:
+            pos=[pos]
+        if type(pos2)!=list:
+            pos2=[pos2]
+        if axis==0:
+            for i,j in zip(pos,pos2):
+                ax_sumslice.plot(self.y[:,i],self.psi_2d[:,i,j])
+        if axis==1:
+            for i,j in zip(pos,pos2):
+                ax_sumslice.plot(self.y[:,i],self.psi_2d[:,j,i])
+        ax_sumslice.set(xlabel='energy / eV', ylabel='LDOS / a.u.')
+        fig_sumslice.show()
             
     def calculate_dos(self,k,nstates):
         self.nstates=nstates
