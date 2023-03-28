@@ -274,7 +274,7 @@ class calculate_Mathieu_dos:
             self.psi_smeared[:,i]+=self.psi_smeared[:,i]/sqrt(r)*Eweight
             self.scattered[:,i]+=self.psi[:,i]/sqrt(r)*Eweight
         
-    def sum_2d(self,fp,x2npts=0,y2npts=0,k2=157.86353/2,y2range=0,de=0.05,tol=0,offset=0.0,normalize_weights=True,normalize_pos=True):
+    def sum_2d(self,fp,x2npts=0,y2npts=0,k2=157.86353/2,y2range=0,de=0.05,dx=0,dx_axis=0,tol=0,offset=0.0,normalize_weights=True,normalize_pos=True):
         if x2npts==0:
             x2npts=self.xpoints
         if y2npts==0:
@@ -286,6 +286,7 @@ class calculate_Mathieu_dos:
         
         def calc_weighting(e1,e2,esum,de):
             return np.exp(-abs(e1+e2-esum)/de)
+        
         psi_2d=np.zeros((self.ypoints,self.xpoints,x2npts))
         
         self.other_psi=calculate_Mathieu_dos('function',x2npts,y2npts,k2,y2range)
@@ -328,11 +329,22 @@ class calculate_Mathieu_dos:
                     self.psi_2d[:,i,j]/=sum(self.psi_2d[:,i,j])
         
         if de!=0:
-            #gaussian smearing
+            #energy gaussian smearing
             de/=(self.y[1,0]-self.y[0,0])
             for i in range(self.xpoints):
                 for j in range(x2npts):
                     self.psi_2d[:,i,j]=gaussian_filter(self.psi_2d[:,i,j],de,mode='nearest')
+                    
+        if dx!=0:
+            #spatial gaussian smearing
+            de/=(self.x[0,1]-self.x[0,0])
+            for i in range(self.ypoints):
+                if dx_axis==0:
+                    for j in range(x2npts):
+                        self.psi_2d[i,:,j]=gaussian_filter(self.psi_2d[i,:,j],dx,mode='nearest')
+                if dx_axis==1:
+                    for j in range(self.xpoints):
+                        self.psi_2d[i,j,:]=gaussian_filter(self.psi_2d[i,j,:],dx,mode='nearest')
                 
         self.y+=offset
     
