@@ -337,14 +337,14 @@ class calculate_Mathieu_dos:
                     
         if dx!=0:
             #spatial gaussian smearing
-            de/=(self.x[0,1]-self.x[0,0])
+            dx/=(self.x[0,1]-self.x[0,0])
             for i in range(self.ypoints):
                 if dx_axis==0:
                     for j in range(x2npts):
-                        self.psi_2d[i,:,j]=gaussian_filter(self.psi_2d[i,:,j],dx,mode='nearest')
+                        self.psi_2d[i,:,j]=gaussian_filter(self.psi_2d[i,:,j],dx,mode='wrap')
                 if dx_axis==1:
                     for j in range(self.xpoints):
-                        self.psi_2d[i,j,:]=gaussian_filter(self.psi_2d[i,j,:],dx,mode='nearest')
+                        self.psi_2d[i,j,:]=gaussian_filter(self.psi_2d[i,j,:],dx,mode='wrap')
                 
         self.y+=offset
     
